@@ -8,4 +8,4 @@ yamllint>=1.35
 molecule>=24.12
 molecule-plugins[docker]>=23.6
 docker>=7.1
-pre-commit>=3.8
+pre-commit>=4.6.2
