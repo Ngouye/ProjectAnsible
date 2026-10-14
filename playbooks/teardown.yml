@@ -1,5 +1,5 @@
 ---
-# Destroys every AWS resource of the environment.
+# Détruit toutes les ressources AWS de l'environnement.
 #   ansible-playbook playbooks/teardown.yml -e confirm_teardown=yes
 - name: Destroy AWS infrastructure
   hosts: localhost

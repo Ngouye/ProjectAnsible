@@ -1,13 +1,14 @@
 ---
 name: CI
 
-# On main, this workflow runs as the quality gate of deploy.yml (workflow_call)
+# Sur main, ce workflow s'exécute comme quality gate de deploy.yml (workflow_call)
 on:
   pull_request:
   push:
     branches-ignore: [main]
   workflow_call:
 
+# Moindre privilège : jeton en lecture seule par défaut
 permissions:
   contents: read
 
@@ -20,7 +21,9 @@ jobs:
     name: Lint & syntax
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-ansible
 
@@ -41,13 +44,17 @@ jobs:
   secrets-scan:
     name: Secrets scan
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read # gitleaks liste les commits d'une pull request
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -56,7 +63,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: lint
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-ansible
 

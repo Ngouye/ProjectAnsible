@@ -1,6 +1,6 @@
 ---
 app_deploy_name: demo-app
-# Overridden by the pipeline with the git commit SHA (-e app_deploy_version=...)
+# Surchargée par le pipeline avec le SHA du commit git (-e app_deploy_version=...)
 app_deploy_version: "1.0.0"
 app_deploy_env: dev
 
@@ -12,7 +12,7 @@ app_deploy_keep_releases: 3
 app_deploy_bind: 127.0.0.1:8000
 app_deploy_workers: 2
 
-# Required, min. 32 characters — from Ansible Vault or AWS SSM Parameter Store
+# Obligatoire, 32 caractères minimum — depuis Ansible Vault ou AWS SSM Parameter Store
 app_deploy_secret_key: ""
 
 # --- nginx / TLS ----------------------------------------------------------------
@@ -22,6 +22,6 @@ app_deploy_tls_days: 365
 app_deploy_rate_limit: 10r/s
 app_deploy_listen_ipv6: "{{ ansible_facts['all_ipv6_addresses'] | default([]) | length > 0 }}"
 
-# --- Health check -------------------------------------------------------------
+# --- Contrôle de santé -------------------------------------------------------------
 app_deploy_healthcheck_retries: 10
 app_deploy_healthcheck_delay: 3

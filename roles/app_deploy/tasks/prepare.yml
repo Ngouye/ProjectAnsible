@@ -4,7 +4,7 @@
     name: "{{ app_deploy_packages }}"
     state: present
 
-# Dedicated unprivileged account: no shell, no home, cannot modify its own code
+# Compte dédié non privilégié : pas de shell, pas de home, ne peut pas modifier son propre code
 - name: Create application system user
   ansible.builtin.user:
     name: "{{ app_deploy_user }}"

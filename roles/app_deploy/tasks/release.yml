@@ -1,6 +1,6 @@
 ---
-# Immutable releases:  /opt/app/releases/<version>/  +  /opt/app/current -> symlink
-# Switching versions is atomic; rolling back is just pointing the symlink back.
+# Releases immuables :  /opt/app/releases/<version>/  +  /opt/app/current -> lien symbolique
+# Le changement de version est atomique ; le rollback consiste à repointer le lien.
 - name: Inspect current release
   ansible.builtin.stat:
     path: "{{ app_deploy_base_dir }}/current"
@@ -20,8 +20,8 @@
         group: "{{ app_deploy_user }}"
         mode: "0750"
 
-    # Code is owned by root and only readable by the app group: a compromised
-    # process cannot rewrite its own code.
+    # Le code appartient à root et n'est lisible que par le groupe app : un processus
+    # compromis ne peut pas réécrire son propre code.
     - name: Copy application code
       ansible.builtin.copy:
         src: app/

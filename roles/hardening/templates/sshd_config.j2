@@ -1,8 +1,8 @@
 # {{ ansible_managed }}
 #
-# Hardened OpenSSH server configuration (CIS-inspired).
-# Drop-in files from /etc/ssh/sshd_config.d/ are intentionally NOT included:
-# cloud-init or a package update cannot silently re-enable password logins.
+# Configuration durcie du serveur OpenSSH (inspirée du CIS).
+# Les fichiers de /etc/ssh/sshd_config.d/ ne sont volontairement PAS inclus :
+# cloud-init ou une mise à jour de paquet ne peut pas réactiver discrètement les mots de passe.
 
 Port {{ hardening_ssh_port }}
 AddressFamily any
@@ -11,12 +11,12 @@ HostKey /etc/ssh/ssh_host_ed25519_key
 HostKey /etc/ssh/ssh_host_ecdsa_key
 HostKey /etc/ssh/ssh_host_rsa_key
 
-# --- Cryptography: modern algorithms only -------------------------------
+# --- Cryptographie : algorithmes modernes uniquement -------------------------------
 KexAlgorithms {{ hardening_ssh_kex_algorithms | join(',') }}
 Ciphers {{ hardening_ssh_ciphers | join(',') }}
 MACs {{ hardening_ssh_macs | join(',') }}
 
-# --- Authentication: public key only, never root ------------------------
+# --- Authentification : clé publique uniquement, jamais root ------------------------
 PermitRootLogin no
 PubkeyAuthentication yes
 AuthenticationMethods publickey
@@ -34,7 +34,7 @@ MaxSessions {{ hardening_ssh_max_sessions }}
 MaxStartups 10:30:60
 LoginGraceTime {{ hardening_ssh_login_grace_time }}
 
-# --- Sessions: no forwarding, idle timeout -------------------------------
+# --- Sessions : aucune redirection, délai d'inactivité -------------------------------
 ClientAliveInterval {{ hardening_ssh_client_alive_interval }}
 ClientAliveCountMax {{ hardening_ssh_client_alive_count_max }}
 TCPKeepAlive no
@@ -48,7 +48,7 @@ PermitUserEnvironment no
 Compression no
 UseDNS no
 
-# --- Logging & banner ------------------------------------------------------
+# --- Journalisation et bannière ------------------------------------------------------
 SyslogFacility AUTH
 LogLevel VERBOSE
 PrintMotd no

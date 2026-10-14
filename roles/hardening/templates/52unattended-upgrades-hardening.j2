@@ -1,5 +1,5 @@
 // {{ ansible_managed }}
-// Overrides 50unattended-upgrades: security origins only (Ubuntu default list).
+// Surcharge 50unattended-upgrades : origines de sécurité uniquement (liste par défaut d'Ubuntu).
 Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
 Unattended-Upgrade::Remove-Unused-Dependencies "true";
 Unattended-Upgrade::Automatic-Reboot "{{ hardening_auto_reboot | bool | lower }}";

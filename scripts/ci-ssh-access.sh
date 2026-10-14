@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Opens / closes temporary SSH access for the CI runner on the web Security Group.
+# Ouvre / ferme un accès SSH temporaire pour le runner CI sur le Security Group web.
 #
 #   scripts/ci-ssh-access.sh open  <env> <cidr>
 #   scripts/ci-ssh-access.sh close <env> <cidr>
 #
-# The pipeline calls "open" before running Ansible and "close" in an
-# always-executed cleanup step, so the runner IP never stays authorised.
+# Le pipeline appelle « open » avant de lancer Ansible et « close » dans une étape
+# de nettoyage toujours exécutée : l'IP du runner ne reste jamais autorisée.
 set -euo pipefail
 
 ACTION="${1:?usage: $0 open|close <env> <cidr>}"

@@ -5,8 +5,8 @@
     state: restarted
     daemon_reload: true
 
-# Both handlers listen to "Reload nginx": the configuration is validated
-# first, and nginx is reloaded only if "nginx -t" succeeds.
+# Les deux handlers écoutent « Reload nginx » : la configuration est d'abord
+# validée, et nginx n'est rechargé que si « nginx -t » réussit.
 - name: Validate nginx configuration
   ansible.builtin.command:
     cmd: nginx -t

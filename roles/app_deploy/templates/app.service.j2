@@ -16,7 +16,7 @@ Restart=on-failure
 RestartSec=3s
 UMask=0027
 
-# --- systemd sandboxing (systemd-analyze security {{ app_deploy_name }}) ---
+# --- Isolation systemd (vérifier avec : systemd-analyze security {{ app_deploy_name }}) ---
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes

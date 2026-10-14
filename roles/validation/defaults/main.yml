@@ -1,11 +1,11 @@
 ---
-# Expected values are declared here on purpose, independently from the
-# hardening role: a test must not reuse the implementation it verifies.
+# Les valeurs attendues sont déclarées ici volontairement, indépendamment du
+# rôle hardening : un test ne doit pas réutiliser l'implémentation qu'il vérifie.
 
 validation_fail_on_error: true
 validation_report_dir: "{{ playbook_dir }}/../reports"
 
-# Effective sshd configuration (output of "sshd -T")
+# Configuration sshd effective (sortie de « sshd -T »)
 validation_expected_sshd:
   permitrootlogin: "no"
   passwordauthentication: "no"
@@ -30,7 +30,7 @@ validation_expected_sysctl:
   kernel.dmesg_restrict: "1"
   fs.suid_dumpable: "0"
 
-# Ports allowed to listen on a non-loopback address
+# Ports autorisés à écouter sur une adresse autre que loopback
 validation_allowed_tcp_ports:
   - 22
   - 80
@@ -42,7 +42,7 @@ validation_required_services:
   - nginx
   - node_exporter
   - "{{ validation_app_service }}"
-# Services that only exist on a real VM (kernel features)
+# Services présents uniquement sur une vraie VM (fonctions du noyau)
 validation_required_host_services: "{{ ['auditd', 'nftables'] + (['fail2ban'] if ansible_facts['os_family'] == 'Debian' else []) }}"
 
 validation_app_https_url: https://127.0.0.1/health

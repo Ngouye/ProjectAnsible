@@ -1,10 +1,10 @@
 #!/usr/sbin/nft -f
 # {{ ansible_managed }}
 #
-# Host firewall: defense in depth behind the AWS Security Group.
-# Default policy: DROP inbound, DROP forward, ACCEPT outbound.
-# Only the "inet hardening" table is managed here, so tables created by other
-# tools (fail2ban) survive a reload. Declare + delete + define = atomic replace.
+# Pare-feu hôte : défense en profondeur derrière le Security Group AWS.
+# Politique par défaut : DROP en entrée, DROP en transfert, ACCEPT en sortie.
+# Seule la table « inet hardening » est gérée ici : les tables créées par d'autres
+# outils (fail2ban) survivent à un rechargement. Déclarer + supprimer + définir = remplacement atomique.
 {% set ssh_v4 = hardening_ssh_allowed_cidrs | reject('search', ':') | list %}
 {% set ssh_v6 = hardening_ssh_allowed_cidrs | select('search', ':') | list %}
 {% set mon_v4 = hardening_monitoring_cidrs | reject('search', ':') | list %}
@@ -21,12 +21,12 @@ table inet hardening {
     ct state invalid drop
     iifname "lo" accept
 
-    # ICMP: diagnostics and path MTU discovery (rate limited), ICMPv6 for neighbour discovery
+    # ICMP : diagnostic et découverte du MTU (débit limité), ICMPv6 pour la découverte de voisins
     meta l4proto icmp icmp type { echo-request, destination-unreachable, time-exceeded, parameter-problem } limit rate 10/second accept
     meta l4proto ipv6-icmp accept
 
 {% if hardening_ssh_allowed_cidrs | length > 0 %}
-    # SSH: administration networks only
+    # SSH : réseaux d'administration uniquement
 {% if ssh_v4 %}
     ip saddr { {{ ssh_v4 | join(', ') }} } tcp dport {{ hardening_ssh_port }} ct state new accept
 {% endif %}
@@ -34,17 +34,17 @@ table inet hardening {
     ip6 saddr { {{ ssh_v6 | join(', ') }} } tcp dport {{ hardening_ssh_port }} ct state new accept
 {% endif %}
 {% else %}
-    # SSH: source filtering delegated to the AWS Security Group (+ fail2ban)
+    # SSH : filtrage des sources délégué au Security Group AWS (+ fail2ban)
     tcp dport {{ hardening_ssh_port }} ct state new accept
 {% endif %}
 {% if hardening_firewall_public_tcp_ports %}
 
-    # Public services
+    # Services publics
     tcp dport { {{ hardening_firewall_public_tcp_ports | join(', ') }} } ct state new accept
 {% endif %}
 {% if hardening_monitoring_tcp_ports %}
 
-    # Monitoring (Prometheus node_exporter)
+    # Supervision (Prometheus node_exporter)
 {% if mon_v4 %}
     ip saddr { {{ mon_v4 | join(', ') }} } tcp dport { {{ hardening_monitoring_tcp_ports | join(', ') }} } ct state new accept
 {% endif %}
@@ -54,7 +54,7 @@ table inet hardening {
 {% endif %}
 
     limit rate 5/minute log prefix "[nft-drop] " level info
-    counter comment "dropped by default policy"
+    counter comment "rejet par la politique par défaut"
   }
 
   chain forward {

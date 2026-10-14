@@ -18,11 +18,22 @@ outputs:
 runs:
   using: composite
   steps:
+    # L'IP provient d'un service externe : elle est validée avant toute utilisation
     - name: Detect runner public IP
       id: ip
       shell: bash
-      run: echo "cidr=$(curl -fsS https://checkip.amazonaws.com | tr -d '[:space:]')/32" >> "$GITHUB_OUTPUT"
+      run: |
+        ip="$(curl -fsS --max-time 10 https://checkip.amazonaws.com | tr -d '[:space:]')"
+        if [[ ! "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+          echo "::error::Unexpected public IP format"
+          exit 1
+        fi
+        echo "cidr=${ip}/32" >> "$GITHUB_OUTPUT"
 
     - name: Update Security Group
       shell: bash
-      run: scripts/ci-ssh-access.sh "${{ inputs.action }}" "${{ inputs.environment }}" "${{ steps.ip.outputs.cidr }}"
+      env:
+        SSH_ACTION: ${{ inputs.action }}
+        TARGET_ENV: ${{ inputs.environment }}
+        RUNNER_CIDR: ${{ steps.ip.outputs.cidr }}
+      run: scripts/ci-ssh-access.sh "$SSH_ACTION" "$TARGET_ENV" "$RUNNER_CIDR"

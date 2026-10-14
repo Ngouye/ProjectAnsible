@@ -1,4 +1,4 @@
-# Python / tooling
+# Python / outillage
 .venv/
 __pycache__/
 *.pyc
@@ -9,7 +9,7 @@ collections/
 *.retry
 reports/
 
-# Secrets — never committed
+# Secrets — jamais commités
 .vault_pass
 *.pem
 *.key
@@ -17,7 +17,7 @@ id_rsa*
 id_ed25519*
 .env
 
-# Editors / OS
+# Éditeurs / OS
 .vscode/
 .idea/
 .DS_Store

@@ -1,5 +1,5 @@
 ---
-# Called once from the control node (include_role tasks_from: report)
+# Appelé une seule fois depuis le nœud de contrôle (include_role tasks_from: report)
 - name: Create report directory
   ansible.builtin.file:
     path: "{{ validation_report_dir }}"

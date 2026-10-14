@@ -1,6 +1,6 @@
 # {{ ansible_managed }}
-# Admin accounts authenticate with SSH keys only (passwords are locked),
-# hence NOPASSWD. Every command is logged (see hardening role).
+# Les comptes admin s'authentifient uniquement par clé SSH (mots de passe verrouillés),
+# d'où NOPASSWD. Chaque commande est journalisée (voir le rôle hardening).
 {% for user in common_admin_users if user.state | default('present') == 'present' %}
 {{ user.name }} ALL=(ALL:ALL) NOPASSWD: ALL
 {% endfor %}

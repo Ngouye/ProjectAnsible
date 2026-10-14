@@ -17,7 +17,7 @@ ExecStart=/usr/local/bin/node_exporter {{ args | join(' ') }}
 Restart=on-failure
 RestartSec=5s
 
-# --- systemd sandboxing: the exporter can read metrics, nothing else ---
+# --- Isolation systemd : l'exporter peut lire les métriques, rien d'autre ---
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=read-only

@@ -7,7 +7,7 @@ hardening_auditd_packages:
 hardening_fail2ban_packages:
   - fail2ban
   - python3-systemd
-# Legacy clear-text services + ufw (nftables is the single firewall manager)
+# Anciens services en clair + ufw (nftables est l'unique gestionnaire de pare-feu)
 hardening_packages_absent:
   - telnet
   - rsh-client

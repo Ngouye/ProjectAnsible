@@ -1,6 +1,6 @@
 ---
 # ---------------------------------------------------------------------------
-# Environment: prod
+# Environnement : prod
 # ---------------------------------------------------------------------------
 project_name: ansible-aws-automation
 env_name: prod
@@ -8,7 +8,7 @@ aws_region: eu-west-3
 
 ansible_ssh_private_key_file: "~/.ssh/{{ project_name }}"
 
-# --- AWS infrastructure (role aws_infra) ------------------------------------
+# --- Infrastructure AWS (rôle aws_infra) ------------------------------------
 aws_infra_vpc_cidr: 10.20.0.0/16
 aws_infra_public_subnets:
   - cidr: 10.20.1.0/24
@@ -23,20 +23,20 @@ aws_infra_web_instance_count: 3
 aws_infra_ssh_public_key_path: "~/.ssh/{{ project_name }}.pub"
 aws_infra_termination_protection: true
 aws_infra_detailed_monitoring: true
-# Production: SSH only from the company VPN / bastion
+# Production : SSH uniquement depuis le VPN de l'entreprise / le bastion
 aws_infra_admin_cidrs:
   - 198.51.100.0/28
 
-# Temporary SSH access for the CI runner, added to the Security Group by the
-# pipeline (-e) so that provisioning does not purge it during the run
+# Accès SSH temporaire du runner CI, ajouté au Security Group par le
+# pipeline (-e) pour que le provisionnement ne le supprime pas pendant l'exécution
 ci_runner_cidrs: []
 
-# --- Hardening ----------------------------------------------------------------
+# --- Durcissement ----------------------------------------------------------------
 hardening_monitoring_cidrs:
   - "{{ aws_infra_vpc_cidr }}"
 hardening_auditd_immutable: true
 
-# --- Monitoring ---------------------------------------------------------------
+# --- Supervision ---------------------------------------------------------------
 monitoring_cloudwatch_enabled: true
 monitoring_alarm_sns_topic_arn: ""
 

@@ -1,8 +1,8 @@
 ---
 name: Drift detection
 
-# Every night: re-applies the hardening baseline in --check mode. Any "changed"
-# task means someone modified a server by hand -> the workflow fails.
+# Chaque nuit : rejoue le durcissement en mode --check. Toute tâche « changed »
+# signifie qu'un serveur a été modifié à la main -> le workflow échoue.
 on:
   schedule:
     - cron: "0 5 * * *"
@@ -13,9 +13,7 @@ on:
         options: [dev, prod]
         default: prod
 
-permissions:
-  contents: read
-  id-token: write
+permissions: {}
 
 env:
   TARGET_ENV: ${{ inputs.environment || 'prod' }}
@@ -25,23 +23,30 @@ jobs:
   drift:
     if: github.event_name == 'workflow_dispatch' || vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
     environment: ${{ inputs.environment || 'prod' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-ansible
 
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-session-name: gha-drift-${{ github.run_id }}
 
       - name: Install SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           install -m 700 -d ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/ansible-aws-automation
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/ansible-aws-automation
           chmod 600 ~/.ssh/ansible-aws-automation
 
       - name: Open SSH for this runner only
@@ -70,6 +75,10 @@ jobs:
         with:
           action: close
           environment: ${{ env.TARGET_ENV }}
+
+      - name: Remove SSH key from the runner
+        if: always()
+        run: rm -f ~/.ssh/ansible-aws-automation
 
       - name: Publish compliance report
         if: always()

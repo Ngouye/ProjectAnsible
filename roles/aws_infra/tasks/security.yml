@@ -1,4 +1,18 @@
 ---
+# CIS AWS Foundations 5.4 : le security group par défaut de chaque VPC ne doit
+# autoriser aucun trafic. Rien ne l'utilise : toutes ses règles sont donc supprimées.
+- name: Remove all rules from the VPC default security group
+  amazon.aws.ec2_security_group:
+    name: default
+    description: default VPC security group
+    vpc_id: "{{ aws_infra_vpc.vpc.id }}"
+    region: "{{ aws_region }}"
+    rules: []
+    rules_egress: []
+    purge_rules: true
+    purge_rules_egress: true
+    state: present
+
 - name: Create web security group (least privilege)
   amazon.aws.ec2_security_group:
     name: "{{ aws_infra_name_prefix }}-web-sg"
@@ -18,8 +32,8 @@
         ports: [9100]
         cidr_ip: "{{ aws_infra_monitoring_cidrs }}"
         rule_desc: Prometheus node_exporter
-    # Egress restricted to what the servers need (packages, CloudWatch, SSM).
-    # DNS, NTP (169.254.169.123) and IMDS are link-local and not filtered by SGs.
+    # Sortie limitée au strict nécessaire (paquets, CloudWatch, SSM).
+    # DNS, NTP (169.254.169.123) et IMDS sont link-local et non filtrés par les SG.
     rules_egress:
       - proto: tcp
         ports: [80, 443]

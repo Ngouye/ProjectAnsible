@@ -8,13 +8,13 @@
     path: /usr/bin/cloud-init
   register: common_cloud_init
 
-# Prevents apt/dnf lock contention with cloud-init on a freshly booted instance
+# Évite les conflits de verrou apt/dnf avec cloud-init sur une instance qui vient de démarrer
 - name: Wait for cloud-init to finish
   ansible.builtin.command:
     cmd: cloud-init status --wait
   register: common_cloud_init_status
   changed_when: false
-  # rc 2 = finished with recoverable warnings
+  # rc 2 = terminé avec des avertissements non bloquants
   failed_when: common_cloud_init_status.rc not in [0, 2]
   when: common_cloud_init.stat.exists
 

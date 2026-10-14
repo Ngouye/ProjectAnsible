@@ -1,6 +1,6 @@
 ---
-# Step 5 — Compliance validation: every control is checked on every host,
-# a JSON report per host + a consolidated Markdown report are written to reports/
+# Étape 5 — Validation de conformité : chaque contrôle est vérifié sur chaque serveur,
+# un rapport JSON par serveur + un rapport Markdown consolidé sont écrits dans reports/
 - name: Validate configuration compliance
   hosts: role_web
   become: true

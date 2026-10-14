@@ -1,5 +1,5 @@
 ---
-# Dynamic inventory for production — same logic as dev, filtered on Environment=prod
+# Inventaire dynamique de production — même logique que dev, filtré sur Environment=prod
 plugin: amazon.aws.aws_ec2
 
 regions:

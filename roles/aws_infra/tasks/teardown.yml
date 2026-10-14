@@ -1,5 +1,5 @@
 ---
-# Ordered destruction of everything created by the role (reverse dependency order)
+# Destruction ordonnée de tout ce que crée le rôle (ordre inverse des dépendances)
 - name: Terminate project instances
   amazon.aws.ec2_instance:
     region: "{{ aws_region }}"

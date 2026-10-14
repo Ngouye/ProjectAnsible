@@ -1,5 +1,5 @@
 ---
-# Strictest ansible-lint profile: what is expected from code that goes to production
+# Profil ansible-lint le plus strict : ce qui est attendu d'un code destiné à la production
 profile: production
 
 exclude_paths:
@@ -8,7 +8,7 @@ exclude_paths:
   - collections/
   - reports/
 
-# The amazon.aws inventory file is not a playbook
+# Le fichier d'inventaire amazon.aws n'est pas un playbook
 kinds:
   - inventory: "inventories/*/aws_ec2.yml"
 

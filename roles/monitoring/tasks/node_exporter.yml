@@ -18,7 +18,7 @@
     - { path: "{{ monitoring_node_exporter_base_dir }}", owner: root }
     - { path: "{{ monitoring_node_exporter_textfile_dir }}", owner: node_exporter }
 
-# The archive is checked against the sha256sums.txt published with the release
+# L'archive est vérifiée avec le fichier sha256sums.txt publié avec la release
 - name: Download node_exporter (SHA-256 verified)
   ansible.builtin.get_url:
     url: "{{ monitoring_node_exporter_url }}"
@@ -37,7 +37,7 @@
     group: root
     creates: "{{ monitoring_node_exporter_base_dir }}/{{ monitoring_node_exporter_release }}/node_exporter"
 
-# Versioned directories + symlink: upgrading or rolling back is a symlink switch
+# Dossiers versionnés + lien symbolique : mettre à jour ou revenir en arrière = changer le lien
 - name: Link node_exporter binary
   ansible.builtin.file:
     src: "{{ monitoring_node_exporter_base_dir }}/{{ monitoring_node_exporter_release }}/node_exporter"

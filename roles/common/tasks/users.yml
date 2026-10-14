@@ -5,7 +5,7 @@
     system: true
     state: present
 
-# Must happen before sshd "AllowGroups" is enforced, otherwise Ansible locks itself out
+# Doit être fait avant l'application de « AllowGroups » dans sshd, sinon Ansible s'enferme dehors
 - name: Add the Ansible connection user to the SSH access group
   ansible.builtin.user:
     name: "{{ ansible_user | default('root') }}"

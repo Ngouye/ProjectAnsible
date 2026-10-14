@@ -1,5 +1,5 @@
 ---
-# Step 2 — Base configuration and CIS-inspired hardening
+# Étape 2 — Configuration de base et durcissement inspiré du CIS
 - name: Configure and harden web servers
   hosts: role_web
   become: true

@@ -1,8 +1,8 @@
 ---
-# Full pipeline: provision -> harden -> monitor -> deploy -> validate
+# Pipeline complet : provision -> harden -> monitoring -> deploy -> validate
 #   ansible-playbook playbooks/site.yml
-#   ansible-playbook playbooks/site.yml --tags hardening      (one layer only)
-#   ansible-playbook playbooks/site.yml --check --diff        (drift detection)
+#   ansible-playbook playbooks/site.yml --tags hardening      (une seule couche)
+#   ansible-playbook playbooks/site.yml --check --diff        (détection de dérive)
 - name: Provision
   ansible.builtin.import_playbook: provision.yml
 

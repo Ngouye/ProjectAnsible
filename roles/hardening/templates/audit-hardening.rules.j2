@@ -1,49 +1,49 @@
 ## {{ ansible_managed }}
-## Audit rules inspired by CIS section "Configure auditd rules".
-## Search events with: ausearch -k <key>
+## Règles d'audit inspirées de la section CIS « Configure auditd rules ».
+## Rechercher les événements : ausearch -k <clé>
 
-## Identity and authentication files
+## Fichiers d'identité et d'authentification
 -w /etc/passwd -p wa -k identity
 -w /etc/group -p wa -k identity
 -w /etc/shadow -p wa -k identity
 -w /etc/gshadow -p wa -k identity
 -w /etc/security/opasswd -p wa -k identity
 
-## Privilege escalation scope
+## Périmètre d'élévation de privilèges
 -w /etc/sudoers -p wa -k scope
 -w /etc/sudoers.d/ -p wa -k scope
 -w /var/log/sudo.log -p wa -k sudo_log
 
-## SSH configuration
+## Configuration SSH
 -w /etc/ssh/sshd_config -p wa -k sshd_config
 
-## Logins and sessions
+## Connexions et sessions
 -w /var/log/lastlog -p wa -k logins
 -w /var/run/faillock -p wa -k logins
 -w /var/run/utmp -p wa -k session
 -w /var/log/wtmp -p wa -k session
 -w /var/log/btmp -p wa -k session
 
-## Time changes
+## Modifications de l'heure
 -a always,exit -F arch=b64 -S adjtimex,settimeofday,clock_settime -k time-change
 -w /etc/localtime -p wa -k time-change
 
-## Network environment
+## Environnement réseau
 -a always,exit -F arch=b64 -S sethostname,setdomainname -k system-locale
 -w /etc/hosts -p wa -k system-locale
 -w /etc/issue -p wa -k system-locale
 -w /etc/issue.net -p wa -k system-locale
 
-## Permission and ownership changes by regular users
+## Changements de permissions et de propriétaire par les utilisateurs
 -a always,exit -F arch=b64 -S chmod,fchmod,fchmodat -F auid>=1000 -F auid!=unset -k perm_mod
 -a always,exit -F arch=b64 -S chown,fchown,lchown,fchownat -F auid>=1000 -F auid!=unset -k perm_mod
 
-## Kernel module loading
+## Chargement de modules noyau
 -w /sbin/insmod -p x -k modules
 -w /sbin/rmmod -p x -k modules
 -w /sbin/modprobe -p x -k modules
 -a always,exit -F arch=b64 -S init_module,finit_module,delete_module -k modules
 
-## Firewall and audit configuration tampering
+## Altération de la configuration du pare-feu et de l'audit
 -w {{ hardening_nftables_config }} -p wa -k firewall
 -w /etc/audit/ -p wa -k audit_config

@@ -2,17 +2,11 @@
 name: Setup Ansible toolchain
 description: Python, Ansible, linters and collections (with caching)
 
-inputs:
-  extra-packages:
-    description: Additional pip requirement specifiers
-    required: false
-    default: ""
-
 runs:
   using: composite
   steps:
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
       with:
         python-version: "3.12"
         cache: pip
@@ -21,10 +15,10 @@ runs:
       shell: bash
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt ${{ inputs.extra-packages }}
+        pip install -r requirements.txt
 
     - name: Cache Ansible collections
-      uses: actions/cache@v4
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: collections
         key: collections-${{ hashFiles('requirements.yml') }}

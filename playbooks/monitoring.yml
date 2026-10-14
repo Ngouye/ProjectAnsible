@@ -1,5 +1,5 @@
 ---
-# Step 3 — Monitoring agents on the servers + CloudWatch alarms on the AWS side
+# Étape 3 — Agents de supervision sur les serveurs + alarmes CloudWatch côté AWS
 - name: Install monitoring agents
   hosts: role_web
   become: true
@@ -35,7 +35,7 @@
         state: present
       loop: "{{ alarm_hosts }}"
 
-    # EC2 auto-recovery: AWS migrates the instance to healthy hardware
+    # Auto-recovery EC2 : AWS migre l'instance vers un matériel sain
     - name: Alarm and auto-recover on system status check failure
       amazon.aws.cloudwatch_metric_alarm:
         region: "{{ aws_region }}"
@@ -54,7 +54,7 @@
         state: present
       loop: "{{ alarm_hosts }}"
 
-    # Custom metrics published by the CloudWatch agent (aggregated per InstanceId)
+    # Métriques personnalisées publiées par l'agent CloudWatch (agrégées par InstanceId)
     - name: Alarm on high disk and memory usage
       amazon.aws.cloudwatch_metric_alarm:
         region: "{{ aws_region }}"

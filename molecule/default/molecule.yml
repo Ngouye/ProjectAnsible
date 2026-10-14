@@ -1,9 +1,9 @@
 ---
-# Integration test of the whole server stack (common -> hardening -> monitoring
-# -> app_deploy), verified by the same compliance role used in production.
+# Test d'intégration de toute la pile serveur (common -> hardening -> monitoring
+# -> app_deploy), vérifiée par le même rôle de conformité qu'en production.
 dependency:
   name: galaxy
-  enabled: false # collections are installed by the CI job / Makefile
+  enabled: false # les collections sont installées par le job CI / le Makefile
 
 driver:
   name: docker
@@ -41,9 +41,9 @@ provisioner:
   inventory:
     group_vars:
       all:
-        # No AWS in CI: CloudWatch agent is not installed
+        # Pas d'AWS en CI : l'agent CloudWatch n'est pas installé
         monitoring_cloudwatch_enabled: false
-        app_deploy_secret_key: molecule-only-secret-key-0123456789abcdef # gitleaks:allow (test value)
+        app_deploy_secret_key: molecule-only-secret-key-0123456789abcdef # gitleaks:allow (valeur de test)
 
 verifier:
   name: ansible

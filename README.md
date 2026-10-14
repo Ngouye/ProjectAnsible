@@ -161,7 +161,7 @@ sequenceDiagram
 
 | Couche | Mesure | Vérifiée par |
 |---|---|---|
-| **Réseau AWS** | Security Group : 80/443 publics, SSH limité aux IP admin, 9100 limité au VPC, sortie limitée à 80/443 | `aws_infra` (assert) |
+| **Réseau AWS** | Security Group : 80/443 publics, SSH limité aux IP admin, 9100 limité au VPC, sortie limitée à 80/443 ; Security Group par défaut du VPC vidé (CIS AWS 5.4) | `aws_infra` (assert) |
 | **Instance** | IMDSv2 obligatoire (anti-SSRF), EBS chiffré, rôle IAM minimal | `aws_infra` |
 | **SSH** | Clé publique uniquement, root interdit, `AllowGroups`, crypto moderne (curve25519, chacha20, AES-GCM, MAC ETM), pas de forwarding, `MaxAuthTries 3`, bannière | `SSH-01`, `SSH-02` |
 | **Noyau** | Pas de routage ni redirections ICMP, anti-spoofing (`rp_filter`), SYN cookies, ASLR, `kptr_restrict`, `dmesg_restrict`, pas de core dumps SUID | `KRN-01` |
@@ -175,6 +175,7 @@ sequenceDiagram
 | **Application** | Utilisateur dédié sans shell, code en lecture seule, systemd sandboxé (`ProtectSystem=strict`, `NoNewPrivileges`, pas de capabilities) | `SVC-01`, `APP-01` |
 | **Web** | HTTP → HTTPS, TLS 1.2/1.3, HSTS, CSP, X-Frame-Options, nosniff, `server_tokens off`, rate limiting | `APP-02`, `APP-03` |
 | **CI/CD** | OIDC (aucune clé AWS longue durée), SSH ouvert uniquement pour l'IP du runner et refermé en `always()`, approbation manuelle en prod | workflows |
+| **Pipeline** | Actions épinglées par SHA de commit + Dependabot, jeton GitHub en lecture seule par défaut (permissions par job), aucun secret interpolé dans les scripts shell, clé SSH effacée du runner en fin de job | workflows, [SECURITY.md](SECURITY.md) |
 
 ---
 

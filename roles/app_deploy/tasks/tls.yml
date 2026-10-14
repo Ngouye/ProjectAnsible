@@ -1,6 +1,6 @@
 ---
-# Self-signed certificate for the demo. In production: ACM certificate on an ALB,
-# or Let's Encrypt (community.crypto.acme_certificate).
+# Certificat auto-signé pour la démo. En production : certificat ACM sur un ALB,
+# ou Let's Encrypt (community.crypto.acme_certificate).
 - name: Create TLS directory
   ansible.builtin.file:
     path: "{{ app_deploy_tls_dir }}"

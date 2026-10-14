@@ -1,8 +1,8 @@
 ---
-# Supply-chain protection: the agent is only installed once its signature has been
-# verified against the official AWS key, itself pinned by fingerprint.
+# Protection de la chaîne d'approvisionnement : l'agent n'est installé qu'après vérification
+# de sa signature avec la clé officielle AWS, elle-même épinglée par son empreinte.
 
-# --- Debian / Ubuntu: .deb downloaded from AWS ----------------------------------
+# --- Debian / Ubuntu : .deb téléchargé depuis AWS ----------------------------------
 - name: Install CloudWatch agent on Debian family
   when: ansible_facts['os_family'] == 'Debian'
   vars:
@@ -66,14 +66,14 @@
         deb: "{{ monitoring_cloudwatch_download_dir }}/amazon-cloudwatch-agent.deb"
         state: present
 
-# --- Amazon Linux 2023: package from the signed Amazon Linux repository ---------
+# --- Amazon Linux 2023 : paquet du dépôt signé Amazon Linux ---------
 - name: Install CloudWatch agent on Amazon Linux
   ansible.builtin.dnf:
     name: amazon-cloudwatch-agent
     state: present
   when: ansible_facts['distribution'] == 'Amazon'
 
-# --- Other RHEL-like distributions: RPM from AWS, checked with rpm -K ------------
+# --- Autres distributions de type RHEL : RPM d'AWS, vérifié avec rpm -K ------------
 - name: Install CloudWatch agent on RHEL family
   when:
     - ansible_facts['os_family'] == 'RedHat'
@@ -101,7 +101,7 @@
         group: root
         mode: "0640"
 
-    # dnf does not check signatures of local packages by default (localpkg_gpgcheck=0)
+    # dnf ne vérifie pas par défaut la signature des paquets locaux (localpkg_gpgcheck=0)
     - name: Verify RPM signature
       ansible.builtin.command:
         cmd: rpm --checksig {{ monitoring_cloudwatch_download_dir }}/amazon-cloudwatch-agent.rpm # noqa: command-instead-of-module

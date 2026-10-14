@@ -4,7 +4,7 @@ bantime  = {{ hardening_fail2ban_bantime }}
 findtime = {{ hardening_fail2ban_findtime }}
 maxretry = {{ hardening_fail2ban_maxretry }}
 ignoreip = {{ hardening_fail2ban_ignoreip | join(' ') }}
-# Read logs from the systemd journal, ban through nftables (own table)
+# Lecture des logs dans le journal systemd, bannissement via nftables (table dédiée)
 backend = systemd
 banaction = nftables-multiport
 banaction_allports = nftables-allports

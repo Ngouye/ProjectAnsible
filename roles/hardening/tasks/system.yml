@@ -1,5 +1,5 @@
 ---
-# --- Password and session policy ---------------------------------------------
+# --- Politique de mots de passe et de sessions ---------------------------------------------
 - name: Configure password aging and default umask
   ansible.builtin.lineinfile:
     path: /etc/login.defs
@@ -27,7 +27,7 @@
     group: root
     mode: "0644"
 
-# --- Core dumps (may leak secrets from memory) ------------------------------
+# --- Core dumps (peuvent divulguer des secrets présents en mémoire) ------------------------------
 - name: Disable core dumps for all users
   ansible.builtin.copy:
     content: |
@@ -63,7 +63,7 @@
     name: ctrl-alt-del.target
     masked: true
 
-# --- Logs ----------------------------------------------------------------------
+# --- Journaux ----------------------------------------------------------------------
 - name: Create journald drop-in directory
   ansible.builtin.file:
     path: /etc/systemd/journald.conf.d
@@ -81,7 +81,7 @@
     mode: "0644"
   notify: Restart journald
 
-# --- Scheduled tasks ----------------------------------------------------------
+# --- Tâches planifiées ----------------------------------------------------------
 - name: Find cron configuration paths
   ansible.builtin.stat:
     path: "{{ item }}"

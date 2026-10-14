@@ -11,14 +11,14 @@ common_packages:
   - tar
   - unzip
 
-# Amazon Time Sync Service (link-local, available in every VPC)
+# Amazon Time Sync Service (link-local, disponible dans chaque VPC)
 common_aws_time_sync: true
 common_aws_time_server: 169.254.169.123
 
-# Only members of this group may open an SSH session (see hardening role)
+# Seuls les membres de ce groupe peuvent ouvrir une session SSH (voir le rôle hardening)
 common_ssh_group: sshusers
 
-# Named admin accounts, SSH key only (password locked)
+# Comptes admin nominatifs, clé SSH uniquement (mot de passe verrouillé)
 # - name: alice
 #   ssh_public_key: "ssh-ed25519 AAAA... alice@laptop"
 #   state: present

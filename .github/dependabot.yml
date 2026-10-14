@@ -1,0 +1,21 @@
+---
+# Mises à jour hebdomadaires (sécurité / versions) : actions GitHub (épinglées par SHA) et outillage Python
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/setup-ansible
+      - /.github/actions/ci-ssh-access
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directories:
+      - /
+      - /roles/app_deploy/files/app
+    schedule:
+      interval: weekly

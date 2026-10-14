@@ -1,5 +1,5 @@
 ---
-# Step 1 — AWS infrastructure: VPC, subnets, Security Group, IAM role, EC2 instances
+# Étape 1 — Infrastructure AWS : VPC, subnets, Security Group, rôle IAM, instances EC2
 - name: Provision AWS infrastructure
   hosts: localhost
   connection: local

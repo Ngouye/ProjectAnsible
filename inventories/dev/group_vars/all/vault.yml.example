@@ -1,10 +1,10 @@
 ---
-# Copy this file to vault.yml then encrypt it:
+# Copier ce fichier en vault.yml puis le chiffrer :
 #   cp vault.yml.example vault.yml
 #   ansible-vault encrypt vault.yml
 #
-# Optional: without vault.yml, the secret is read from AWS SSM Parameter Store:
+# Facultatif : sans vault.yml, le secret est lu dans AWS SSM Parameter Store :
 #   aws ssm put-parameter --type SecureString \
 #     --name /ansible-aws-automation/dev/app_secret_key \
 #     --value "$(openssl rand -hex 32)"
-vault_app_secret_key: "change-me-with-openssl-rand-hex-32" # gitleaks:allow (placeholder)
+vault_app_secret_key: "change-me-with-openssl-rand-hex-32" # gitleaks:allow (valeur d'exemple)

@@ -25,7 +25,7 @@
     security_groups:
       - "{{ aws_infra_web_sg.group_id }}"
     iam_instance_profile: "{{ aws_infra_iam_role.iam_role.role_name }}"
-    # IMDSv2 mandatory: blocks SSRF attacks against the metadata endpoint
+    # IMDSv2 obligatoire : bloque les attaques SSRF contre le service de métadonnées
     metadata_options:
       http_endpoint: enabled
       http_tokens: required
@@ -41,8 +41,8 @@
     termination_protection: "{{ aws_infra_termination_protection }}"
     detailed_monitoring: "{{ aws_infra_detailed_monitoring }}"
     tags: "{{ aws_infra_tags | combine({'Role': 'web', 'OS': aws_infra_os}) }}"
-    # Explicit filters: without them, a new AMI release would be seen as a
-    # different instance and a re-run would launch duplicates.
+    # Filtres explicites : sans eux, la sortie d'une nouvelle AMI ferait voir une
+    # instance différente et une nouvelle exécution lancerait des doublons.
     filters:
       "tag:Name": "{{ aws_infra_name_prefix }}-web-{{ '%02d' | format(item) }}"
       "tag:Environment": "{{ env_name }}"
@@ -53,7 +53,7 @@
   loop_control:
     label: "{{ aws_infra_name_prefix }}-web-{{ '%02d' | format(item) }}"
   register: aws_infra_instances
-  # The IAM instance profile can take a few seconds to propagate
+  # Le profil d'instance IAM peut mettre quelques secondes à se propager
   retries: 3
   delay: 15
   until: aws_infra_instances is succeeded

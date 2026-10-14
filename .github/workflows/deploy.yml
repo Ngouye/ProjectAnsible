@@ -17,9 +17,8 @@ on:
         options: [site, deploy, harden, monitoring, validate]
         default: site
 
-permissions:
-  contents: read
-  id-token: write # OIDC: no long-lived AWS keys stored in GitHub
+# Moindre privilège : aucun droit par défaut, chaque job demande ce dont il a besoin
+permissions: {}
 
 env:
   TARGET_ENV: ${{ inputs.environment || 'dev' }}
@@ -30,34 +29,44 @@ jobs:
   ci:
     name: Quality gate
     uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+      pull-requests: read
 
   deploy:
     name: Deploy to ${{ inputs.environment || 'dev' }}
     needs: ci
-    # Automatic deployment on push only once AWS is wired (repository variable DEPLOY_ENABLED=true)
+    # Déploiement automatique sur push seulement quand AWS est configuré (variable de dépôt DEPLOY_ENABLED=true)
     if: github.event_name == 'workflow_dispatch' || vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-24.04
-    # GitHub Environment: "prod" requires a manual approval (protection rule)
+    permissions:
+      contents: read
+      id-token: write # OIDC : identifiants AWS temporaires, aucune clé d'accès stockée dans GitHub
+    # Environnement GitHub : « prod » exige une approbation manuelle (règle de protection)
     environment: ${{ inputs.environment || 'dev' }}
     concurrency:
       group: deploy-${{ inputs.environment || 'dev' }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-ansible
 
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-session-name: gha-${{ github.run_id }}
+          role-session-name: gha-deploy-${{ github.run_id }}
 
       - name: Install SSH deploy key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           install -m 700 -d ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/ansible-aws-automation
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/ansible-aws-automation
           chmod 600 ~/.ssh/ansible-aws-automation
           ssh-keygen -y -f ~/.ssh/ansible-aws-automation > ~/.ssh/ansible-aws-automation.pub
 
@@ -68,20 +77,26 @@ jobs:
           action: open
           environment: ${{ env.TARGET_ENV }}
 
-      - name: Run playbooks/${{ env.PLAYBOOK }}.yml
+      - name: Run playbook
+        env:
+          RUNNER_CIDR: ${{ steps.ssh.outputs.cidr }}
         run: |
           ansible-playbook "playbooks/${PLAYBOOK}.yml" \
             -i "inventories/${TARGET_ENV}/aws_ec2.yml" \
-            -e '{"ci_runner_cidrs": ["${{ steps.ssh.outputs.cidr }}"]}' \
+            -e "{\"ci_runner_cidrs\": [\"${RUNNER_CIDR}\"]}" \
             -e "app_deploy_version=${GITHUB_SHA::7}"
 
-      # Always executed, even if the deployment failed
+      # Toujours exécuté, même si le déploiement a échoué
       - name: Close SSH for this runner
         if: always() && steps.ssh.outcome == 'success'
         uses: ./.github/actions/ci-ssh-access
         with:
           action: close
           environment: ${{ env.TARGET_ENV }}
+
+      - name: Remove SSH key from the runner
+        if: always()
+        run: rm -f ~/.ssh/ansible-aws-automation ~/.ssh/ansible-aws-automation.pub
 
       - name: Publish compliance report
         if: always()
@@ -92,7 +107,7 @@ jobs:
 
       - name: Upload reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: compliance-${{ env.TARGET_ENV }}-${{ github.run_number }}
           path: reports/

@@ -1,6 +1,6 @@
 ---
-# Step 4 — Rolling deployment: one server at a time, the run stops at the first
-# failure (the failed host has already rolled back), the others keep serving.
+# Étape 4 — Déploiement progressif : un serveur à la fois, l'exécution s'arrête au premier
+# échec (le serveur en échec est déjà revenu en arrière), les autres continuent de servir.
 - name: Deploy application (rolling update)
   hosts: role_web
   become: true

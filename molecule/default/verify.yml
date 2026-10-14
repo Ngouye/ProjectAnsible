@@ -1,6 +1,6 @@
 ---
-# The verifier is the production compliance role: what is tested in CI is
-# exactly what is checked on the EC2 instances after each deployment.
+# Le vérificateur est le rôle de conformité de production : ce qui est testé en CI
+# est exactement ce qui est contrôlé sur les instances EC2 après chaque déploiement.
 - name: Verify
   hosts: all
   become: true

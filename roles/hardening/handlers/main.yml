@@ -6,7 +6,7 @@
   when: not hardening_is_container
 
 - name: Reload nftables
-  # reload re-applies only our table; restart would flush every table (fail2ban included)
+  # reload ne réapplique que notre table ; restart viderait toutes les tables (fail2ban compris)
   ansible.builtin.systemd_service:
     name: nftables
     state: reloaded
@@ -16,14 +16,14 @@
     cmd: /usr/sbin/augenrules --load
   register: hardening_augenrules
   changed_when: true
-  # In immutable mode (-e 2) new rules only apply after a reboot: not an error
+  # En mode immuable (-e 2), les nouvelles règles ne s'appliquent qu'après redémarrage : pas une erreur
   failed_when:
     - hardening_augenrules.rc != 0
     - "'immutable' not in (hardening_augenrules.stdout ~ hardening_augenrules.stderr)"
   when: not hardening_is_container
 
 - name: Reload auditd configuration
-  # auditd refuses "systemctl restart" on RHEL; SIGHUP reloads auditd.conf everywhere
+  # auditd refuse « systemctl restart » sur RHEL ; SIGHUP recharge auditd.conf partout
   ansible.builtin.command:
     cmd: pkill -HUP -x auditd
   changed_when: true

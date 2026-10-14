@@ -1,5 +1,5 @@
 ---
-# --- Debian / Ubuntu: unattended-upgrades ------------------------------------
+# --- Debian / Ubuntu : unattended-upgrades ------------------------------------
 - name: Install unattended-upgrades
   ansible.builtin.apt:
     name: unattended-upgrades
@@ -18,7 +18,7 @@
     - 52unattended-upgrades-hardening
   when: ansible_facts['os_family'] == 'Debian'
 
-# --- RHEL / Amazon Linux: dnf-automatic --------------------------------------
+# --- RHEL / Amazon Linux : dnf-automatic --------------------------------------
 - name: Install dnf-automatic
   ansible.builtin.dnf:
     name: dnf-automatic

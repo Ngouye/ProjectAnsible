@@ -1,13 +1,13 @@
 ---
-# 1. Collect evidence (read-only probes, never fail here)
+# 1. Collecte des preuves (sondes en lecture seule, n'échouent jamais ici)
 - name: Collect compliance evidence
   ansible.builtin.import_tasks: collect.yml
 
-# 2. Evaluate every control into a compliance matrix
+# 2. Évaluation de chaque contrôle dans une matrice de conformité
 - name: Evaluate compliance controls
   ansible.builtin.import_tasks: evaluate.yml
 
-# 3. Publish the report and enforce the result
+# 3. Publication du rapport et application du résultat
 - name: Create report directory on the control node
   ansible.builtin.file:
     path: "{{ validation_report_dir }}"

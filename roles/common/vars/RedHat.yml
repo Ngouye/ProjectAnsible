@@ -1,5 +1,5 @@
 ---
-# "curl" is deliberately absent: Amazon Linux 2023 ships curl-minimal, which conflicts with it
+# « curl » est volontairement absent : Amazon Linux 2023 fournit curl-minimal, qui entre en conflit avec lui
 common_packages_os:
   - iproute
   - policycoreutils-python-utils

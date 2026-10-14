@@ -1,4 +1,4 @@
-"""Demo web service deployed by Ansible behind nginx + gunicorn."""
+"""Service web de démonstration déployé par Ansible derrière nginx + gunicorn."""
 
 import os
 import socket

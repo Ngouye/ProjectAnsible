@@ -1,5 +1,5 @@
 ---
-# Host keys are normally generated on first boot; containers may not have them yet
+# Les clés d'hôte sont normalement générées au premier démarrage ; un conteneur peut ne pas les avoir
 - name: Generate missing SSH host keys
   ansible.builtin.command:
     cmd: ssh-keygen -A
@@ -22,8 +22,8 @@
     group: root
     mode: "0644"
 
-# The configuration is validated by sshd itself before replacing the live file:
-# a typo can never lock us out of the server.
+# La configuration est validée par sshd lui-même avant de remplacer le fichier actif :
+# une faute de frappe ne peut jamais nous enfermer hors du serveur.
 - name: Deploy hardened sshd configuration
   ansible.builtin.template:
     src: sshd_config.j2

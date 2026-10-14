@@ -1,7 +1,7 @@
 ---
 - name: Compute configuration drift
   ansible.builtin.set_fact:
-    # Expected "key value" lines missing from the live configuration
+    # Lignes « clé valeur » attendues mais absentes de la configuration active
     validation_sshd_drift: >-
       {{ validation_expected_sshd | dictsort | map('join', ' ') | list
          | difference(validation_sshd.stdout_lines | default([])) }}
@@ -29,62 +29,62 @@
   ansible.builtin.set_fact:
     validation_checks:
       - id: SSH-01
-        title: Effective sshd configuration matches the hardening baseline
+        title: Configuration sshd effective conforme au référentiel de durcissement
         applicable: true
         passed: "{{ validation_sshd.rc | default(1) == 0 and validation_sshd_drift | length == 0 }}"
         details: "{{ validation_sshd_drift }}"
       - id: SSH-02
-        title: sshd_config is readable by root only (0600)
+        title: sshd_config lisible par root uniquement (0600)
         applicable: true
         passed: "{{ validation_sshd_config.stat.exists and validation_sshd_config.stat.mode == '0600' }}"
         details: "{{ validation_sshd_config.stat.mode | default('missing') }}"
       - id: KRN-01
-        title: Kernel network and memory protections (sysctl) are active
+        title: Protections réseau et mémoire du noyau actives (sysctl)
         applicable: "{{ not validation_is_container }}"
         passed: "{{ validation_sysctl_drift | length == 0 }}"
         details: "{{ validation_sysctl_drift }}"
       - id: NET-01
-        title: Host firewall is active with a default-deny inbound policy
+        title: Pare-feu hôte actif avec une politique d'entrée « drop »
         applicable: "{{ not validation_is_container }}"
         passed: "{{ validation_nft.rc | default(1) == 0 and 'policy drop' in validation_nft.stdout | default('') }}"
         details: ""
       - id: NET-02
-        title: No unexpected TCP port listening on a public interface
+        title: Aucun port TCP inattendu en écoute sur une interface publique
         applicable: true
         passed: "{{ validation_unexpected_ports | length == 0 }}"
         details: "{{ validation_unexpected_ports }}"
       - id: AUD-01
-        title: auditd is running with the hardening rules loaded
+        title: auditd actif avec les règles de durcissement chargées
         applicable: "{{ not validation_is_container }}"
         passed: "{{ 'identity' in validation_audit.stdout | default('') }}"
         details: ""
       - id: SVC-01
-        title: Required services are running
+        title: Services requis démarrés
         applicable: true
         passed: "{{ validation_services_down | length == 0 }}"
         details: "{{ validation_services_down }}"
       - id: UPD-01
-        title: Automatic security updates are configured
+        title: Mises à jour de sécurité automatiques configurées
         applicable: true
         passed: "{{ validation_updates.stat.exists }}"
         details: ""
       - id: MON-01
-        title: node_exporter exposes Prometheus metrics
+        title: node_exporter expose les métriques Prometheus
         applicable: true
         passed: "{{ validation_metrics.status | default(0) == 200 and 'node_cpu_seconds_total' in validation_metrics.content | default('') }}"
         details: ""
       - id: APP-01
-        title: Application is healthy over HTTPS
+        title: Application saine en HTTPS
         applicable: true
         passed: "{{ validation_https.status | default(0) == 200 }}"
         details: "{{ validation_https.status | default('unreachable') }}"
       - id: APP-02
-        title: Plain HTTP is redirected to HTTPS
+        title: HTTP redirigé vers HTTPS
         applicable: true
         passed: "{{ validation_http.status | default(0) in [301, 308] and validation_http.location | default('') is match('https://') }}"
         details: "{{ validation_http.location | default('') }}"
       - id: APP-03
-        title: Security headers are set (HSTS, CSP, nosniff, frame options)
+        title: En-têtes de sécurité présents (HSTS, CSP, nosniff, X-Frame-Options)
         applicable: true
         passed: "{{ validation_missing_headers | length == 0 }}"
         details: "{{ validation_missing_headers }}"

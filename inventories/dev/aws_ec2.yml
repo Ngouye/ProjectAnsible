@@ -1,6 +1,6 @@
 ---
-# Dynamic inventory: EC2 instances are discovered from their tags,
-# no IP address is ever hard-coded in the repository.
+# Inventaire dynamique : les instances EC2 sont découvertes par leurs tags,
+# aucune adresse IP n'est jamais écrite en dur dans le dépôt.
 plugin: amazon.aws.aws_ec2
 
 regions:
@@ -15,7 +15,7 @@ hostnames:
   - tag:Name
   - instance-id
 
-# Groups: role_web, env_dev, os_ubuntu, az_eu_west_3a...
+# Groupes : role_web, env_dev, os_ubuntu, az_eu_west_3a...
 keyed_groups:
   - key: tags.Role
     prefix: role

@@ -1,6 +1,6 @@
 ---
-# Ansible collections required by the project
-# Install: ansible-galaxy collection install -r requirements.yml
+# Collections Ansible nécessaires au projet
+# Installation : ansible-galaxy collection install -r requirements.yml
 collections:
   - name: amazon.aws
     version: ">=9.0.0,<13.0.0"
@@ -10,3 +10,6 @@ collections:
     version: ">=1.6.0"
   - name: community.crypto
     version: ">=2.20.0"
+  # Tests uniquement : utilisée par le driver Docker de Molecule
+  - name: community.docker
+    version: ">=3.10.0"
