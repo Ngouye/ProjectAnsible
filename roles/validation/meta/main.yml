@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  role_name: validation
+  namespace: portfolio
+  author: Ngouye Gning
+  description: Post-deployment compliance checks (SSH, kernel, firewall, audit, services, TLS headers) with JSON/Markdown reports
+  license: MIT
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+    - name: EL
+      versions:
+        - "9"
+  galaxy_tags:
+    - compliance
+    - testing
+    - security
+
+dependencies: []

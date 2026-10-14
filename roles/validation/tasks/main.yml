@@ -1,0 +1,45 @@
+---
+# 1. Collect evidence (read-only probes, never fail here)
+- name: Collect compliance evidence
+  ansible.builtin.import_tasks: collect.yml
+
+# 2. Evaluate every control into a compliance matrix
+- name: Evaluate compliance controls
+  ansible.builtin.import_tasks: evaluate.yml
+
+# 3. Publish the report and enforce the result
+- name: Create report directory on the control node
+  ansible.builtin.file:
+    path: "{{ validation_report_dir }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Write host compliance report
+  ansible.builtin.copy:
+    content: "{{ validation_report | to_nice_json }}\n"
+    dest: "{{ validation_report_dir }}/{{ inventory_hostname }}.json"
+    mode: "0644"
+  vars:
+    validation_report:
+      host: "{{ inventory_hostname }}"
+      os: "{{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }}"
+      checks: "{{ validation_checks }}"
+  delegate_to: localhost
+  become: false
+
+- name: Display compliance summary
+  ansible.builtin.debug:
+    msg: >-
+      {{ validation_checks | selectattr('applicable') | selectattr('passed') | list | length }}
+      / {{ validation_checks | selectattr('applicable') | list | length }} controls passed
+      - failed: {{ validation_failed | map(attribute='id') | join(', ') | default('none', true) }}
+
+- name: Enforce compliance
+  ansible.builtin.assert:
+    that: validation_failed | length == 0
+    fail_msg: "Non-compliant controls: {{ validation_failed | map(attribute='id') | join(', ') }}"
+    success_msg: All applicable controls are compliant
+  when: validation_fail_on_error | bool

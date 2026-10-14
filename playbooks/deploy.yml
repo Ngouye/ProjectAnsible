@@ -1,0 +1,11 @@
+---
+# Step 4 — Rolling deployment: one server at a time, the run stops at the first
+# failure (the failed host has already rolled back), the others keep serving.
+- name: Deploy application (rolling update)
+  hosts: role_web
+  become: true
+  serial: "{{ deploy_batch_size | default(1) }}"
+  max_fail_percentage: 0
+  roles:
+    - role: app_deploy
+      tags: [deploy]

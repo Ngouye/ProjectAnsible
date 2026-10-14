@@ -1,0 +1,13 @@
+---
+# Called once from the control node (include_role tasks_from: report)
+- name: Create report directory
+  ansible.builtin.file:
+    path: "{{ validation_report_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Write consolidated Markdown compliance report
+  ansible.builtin.template:
+    src: compliance-report.md.j2
+    dest: "{{ validation_report_dir }}/compliance-report.md"
+    mode: "0644"

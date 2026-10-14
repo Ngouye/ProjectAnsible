@@ -1,0 +1,10 @@
+---
+# Step 2 — Base configuration and CIS-inspired hardening
+- name: Configure and harden web servers
+  hosts: role_web
+  become: true
+  roles:
+    - role: common
+      tags: [common]
+    - role: hardening
+      tags: [hardening]

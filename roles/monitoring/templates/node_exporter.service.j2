@@ -1,0 +1,42 @@
+# {{ ansible_managed }}
+{% set args = [
+  '--web.listen-address=' ~ monitoring_node_exporter_listen_address,
+  '--collector.textfile.directory=' ~ monitoring_node_exporter_textfile_dir,
+] + monitoring_node_exporter_collectors | map('regex_replace', '^', '--collector.') | list %}
+[Unit]
+Description=Prometheus Node Exporter {{ monitoring_node_exporter_version }}
+Documentation=https://github.com/prometheus/node_exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=node_exporter
+Group=node_exporter
+ExecStart=/usr/local/bin/node_exporter {{ args | join(' ') }}
+Restart=on-failure
+RestartSec=5s
+
+# --- systemd sandboxing: the exporter can read metrics, nothing else ---
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectHostname=yes
+ProtectClock=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+
+[Install]
+WantedBy=multi-user.target

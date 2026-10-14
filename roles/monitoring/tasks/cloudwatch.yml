@@ -1,0 +1,131 @@
+---
+# Supply-chain protection: the agent is only installed once its signature has been
+# verified against the official AWS key, itself pinned by fingerprint.
+
+# --- Debian / Ubuntu: .deb downloaded from AWS ----------------------------------
+- name: Install CloudWatch agent on Debian family
+  when: ansible_facts['os_family'] == 'Debian'
+  vars:
+    monitoring_cw_url: "{{ monitoring_cloudwatch_base_url }}/ubuntu/{{ monitoring_arch }}/latest/amazon-cloudwatch-agent.deb"
+  block:
+    - name: Create package download directory
+      ansible.builtin.file:
+        path: "{{ monitoring_cloudwatch_download_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Download CloudWatch agent package, signature and AWS public key
+      ansible.builtin.get_url:
+        url: "{{ item.url }}"
+        dest: "{{ monitoring_cloudwatch_download_dir }}/{{ item.name }}"
+        owner: root
+        group: root
+        mode: "0640"
+      loop:
+        - { url: "{{ monitoring_cw_url }}", name: amazon-cloudwatch-agent.deb }
+        - { url: "{{ monitoring_cw_url }}.sig", name: amazon-cloudwatch-agent.deb.sig }
+        - { url: "{{ monitoring_cloudwatch_gpg_key_url }}", name: amazon-cloudwatch-agent.asc }
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Convert AWS public key to a binary keyring
+      ansible.builtin.command:
+        cmd: >-
+          gpg --batch --dearmor
+          -o {{ monitoring_cloudwatch_download_dir }}/amazon-cloudwatch-agent.keyring
+          {{ monitoring_cloudwatch_download_dir }}/amazon-cloudwatch-agent.asc
+        creates: "{{ monitoring_cloudwatch_download_dir }}/amazon-cloudwatch-agent.keyring"
+
+    - name: Read signing key fingerprint
+      ansible.builtin.command:
+        cmd: gpg --batch --show-keys --with-colons {{ monitoring_cloudwatch_download_dir }}/amazon-cloudwatch-agent.keyring
+      register: monitoring_cw_key
+      changed_when: false
+      check_mode: false
+
+    - name: Assert the key is the official AWS CloudWatch agent key
+      ansible.builtin.assert:
+        that:
+          - ('fpr:::::::::' ~ monitoring_cloudwatch_gpg_fingerprint ~ ':') in monitoring_cw_key.stdout
+        fail_msg: Unexpected GPG key fingerprint - possible supply-chain tampering, aborting.
+        quiet: true
+
+    - name: Verify package signature
+      ansible.builtin.command:
+        cmd: >-
+          gpgv --keyring {{ monitoring_cloudwatch_download_dir }}/amazon-cloudwatch-agent.keyring
+          {{ monitoring_cloudwatch_download_dir }}/amazon-cloudwatch-agent.deb.sig
+          {{ monitoring_cloudwatch_download_dir }}/amazon-cloudwatch-agent.deb
+      changed_when: false
+      check_mode: false
+
+    - name: Install CloudWatch agent package
+      ansible.builtin.apt:
+        deb: "{{ monitoring_cloudwatch_download_dir }}/amazon-cloudwatch-agent.deb"
+        state: present
+
+# --- Amazon Linux 2023: package from the signed Amazon Linux repository ---------
+- name: Install CloudWatch agent on Amazon Linux
+  ansible.builtin.dnf:
+    name: amazon-cloudwatch-agent
+    state: present
+  when: ansible_facts['distribution'] == 'Amazon'
+
+# --- Other RHEL-like distributions: RPM from AWS, checked with rpm -K ------------
+- name: Install CloudWatch agent on RHEL family
+  when:
+    - ansible_facts['os_family'] == 'RedHat'
+    - ansible_facts['distribution'] != 'Amazon'
+  block:
+    - name: Import AWS CloudWatch agent signing key
+      ansible.builtin.rpm_key:
+        key: "{{ monitoring_cloudwatch_gpg_key_url }}"
+        fingerprint: "{{ monitoring_cloudwatch_gpg_fingerprint }}"
+        state: present
+
+    - name: Create package download directory
+      ansible.builtin.file:
+        path: "{{ monitoring_cloudwatch_download_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Download CloudWatch agent RPM
+      ansible.builtin.get_url:
+        url: "{{ monitoring_cloudwatch_base_url }}/redhat/{{ monitoring_arch }}/latest/amazon-cloudwatch-agent.rpm"
+        dest: "{{ monitoring_cloudwatch_download_dir }}/amazon-cloudwatch-agent.rpm"
+        owner: root
+        group: root
+        mode: "0640"
+
+    # dnf does not check signatures of local packages by default (localpkg_gpgcheck=0)
+    - name: Verify RPM signature
+      ansible.builtin.command:
+        cmd: rpm --checksig {{ monitoring_cloudwatch_download_dir }}/amazon-cloudwatch-agent.rpm # noqa: command-instead-of-module
+      register: monitoring_cw_rpm_sig
+      changed_when: false
+      check_mode: false
+      failed_when: "'signatures OK' not in monitoring_cw_rpm_sig.stdout"
+
+    - name: Install CloudWatch agent RPM
+      ansible.builtin.dnf:
+        name: "{{ monitoring_cloudwatch_download_dir }}/amazon-cloudwatch-agent.rpm"
+        state: present
+
+# --- Configuration ----------------------------------------------------------------
+- name: Deploy CloudWatch agent configuration
+  ansible.builtin.template:
+    src: amazon-cloudwatch-agent.json.j2
+    dest: "{{ monitoring_cloudwatch_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload CloudWatch agent
+
+- name: Enable CloudWatch agent service
+  ansible.builtin.systemd_service:
+    name: amazon-cloudwatch-agent
+    enabled: true

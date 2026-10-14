@@ -1,0 +1,14 @@
+---
+- name: Load OS family variables
+  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
+  tags: [always]
+
+- name: Install Prometheus node_exporter
+  ansible.builtin.import_tasks: node_exporter.yml
+  when: monitoring_node_exporter_enabled | bool
+  tags: [monitoring, node_exporter]
+
+- name: Install Amazon CloudWatch agent
+  ansible.builtin.import_tasks: cloudwatch.yml
+  when: monitoring_cloudwatch_enabled | bool
+  tags: [monitoring, cloudwatch]

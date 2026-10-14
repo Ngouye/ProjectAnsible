@@ -1,0 +1,6 @@
+# {{ ansible_managed }}
+[Journal]
+Storage=persistent
+Compress=yes
+SystemMaxUse={{ hardening_journald_max_use }}
+ForwardToSyslog=yes

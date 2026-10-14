@@ -1,0 +1,16 @@
+---
+# Strictest ansible-lint profile: what is expected from code that goes to production
+profile: production
+
+exclude_paths:
+  - .cache/
+  - .github/
+  - collections/
+  - reports/
+
+# The amazon.aws inventory file is not a playbook
+kinds:
+  - inventory: "inventories/*/aws_ec2.yml"
+
+use_default_rules: true
+offline: false

@@ -1,0 +1,42 @@
+---
+# Self-signed certificate for the demo. In production: ACM certificate on an ALB,
+# or Let's Encrypt (community.crypto.acme_certificate).
+- name: Create TLS directory
+  ansible.builtin.file:
+    path: "{{ app_deploy_tls_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Generate TLS private key (ECDSA P-256)
+  community.crypto.openssl_privatekey:
+    path: "{{ app_deploy_tls_dir }}/{{ app_deploy_name }}.key"
+    type: ECC
+    curve: secp256r1
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Generate certificate signing request
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: "{{ app_deploy_tls_dir }}/{{ app_deploy_name }}.key"
+    common_name: "{{ ansible_facts['fqdn'] }}"
+    subject_alt_name:
+      - "DNS:{{ ansible_facts['fqdn'] }}"
+      - DNS:localhost
+      - IP:127.0.0.1
+  register: app_deploy_csr
+  changed_when: false
+
+- name: Generate self-signed certificate
+  community.crypto.x509_certificate:
+    path: "{{ app_deploy_tls_dir }}/{{ app_deploy_name }}.crt"
+    csr_content: "{{ app_deploy_csr.csr }}"
+    privatekey_path: "{{ app_deploy_tls_dir }}/{{ app_deploy_name }}.key"
+    provider: selfsigned
+    selfsigned_not_after: "+{{ app_deploy_tls_days }}d"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx

@@ -1,0 +1,25 @@
+---
+common_timezone: Etc/UTC
+
+common_packages:
+  - ca-certificates
+  - chrony
+  - jq
+  - openssh-server
+  - python3
+  - sudo
+  - tar
+  - unzip
+
+# Amazon Time Sync Service (link-local, available in every VPC)
+common_aws_time_sync: true
+common_aws_time_server: 169.254.169.123
+
+# Only members of this group may open an SSH session (see hardening role)
+common_ssh_group: sshusers
+
+# Named admin accounts, SSH key only (password locked)
+# - name: alice
+#   ssh_public_key: "ssh-ed25519 AAAA... alice@laptop"
+#   state: present
+common_admin_users: []

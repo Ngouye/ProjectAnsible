@@ -1,0 +1,67 @@
+#!/usr/sbin/nft -f
+# {{ ansible_managed }}
+#
+# Host firewall: defense in depth behind the AWS Security Group.
+# Default policy: DROP inbound, DROP forward, ACCEPT outbound.
+# Only the "inet hardening" table is managed here, so tables created by other
+# tools (fail2ban) survive a reload. Declare + delete + define = atomic replace.
+{% set ssh_v4 = hardening_ssh_allowed_cidrs | reject('search', ':') | list %}
+{% set ssh_v6 = hardening_ssh_allowed_cidrs | select('search', ':') | list %}
+{% set mon_v4 = hardening_monitoring_cidrs | reject('search', ':') | list %}
+{% set mon_v6 = hardening_monitoring_cidrs | select('search', ':') | list %}
+
+table inet hardening
+delete table inet hardening
+
+table inet hardening {
+  chain input {
+    type filter hook input priority filter; policy drop;
+
+    ct state established,related accept
+    ct state invalid drop
+    iifname "lo" accept
+
+    # ICMP: diagnostics and path MTU discovery (rate limited), ICMPv6 for neighbour discovery
+    meta l4proto icmp icmp type { echo-request, destination-unreachable, time-exceeded, parameter-problem } limit rate 10/second accept
+    meta l4proto ipv6-icmp accept
+
+{% if hardening_ssh_allowed_cidrs | length > 0 %}
+    # SSH: administration networks only
+{% if ssh_v4 %}
+    ip saddr { {{ ssh_v4 | join(', ') }} } tcp dport {{ hardening_ssh_port }} ct state new accept
+{% endif %}
+{% if ssh_v6 %}
+    ip6 saddr { {{ ssh_v6 | join(', ') }} } tcp dport {{ hardening_ssh_port }} ct state new accept
+{% endif %}
+{% else %}
+    # SSH: source filtering delegated to the AWS Security Group (+ fail2ban)
+    tcp dport {{ hardening_ssh_port }} ct state new accept
+{% endif %}
+{% if hardening_firewall_public_tcp_ports %}
+
+    # Public services
+    tcp dport { {{ hardening_firewall_public_tcp_ports | join(', ') }} } ct state new accept
+{% endif %}
+{% if hardening_monitoring_tcp_ports %}
+
+    # Monitoring (Prometheus node_exporter)
+{% if mon_v4 %}
+    ip saddr { {{ mon_v4 | join(', ') }} } tcp dport { {{ hardening_monitoring_tcp_ports | join(', ') }} } ct state new accept
+{% endif %}
+{% if mon_v6 %}
+    ip6 saddr { {{ mon_v6 | join(', ') }} } tcp dport { {{ hardening_monitoring_tcp_ports | join(', ') }} } ct state new accept
+{% endif %}
+{% endif %}
+
+    limit rate 5/minute log prefix "[nft-drop] " level info
+    counter comment "dropped by default policy"
+  }
+
+  chain forward {
+    type filter hook forward priority filter; policy drop;
+  }
+
+  chain output {
+    type filter hook output priority filter; policy accept;
+  }
+}

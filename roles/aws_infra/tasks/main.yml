@@ -1,0 +1,22 @@
+---
+- name: Validate provisioning inputs
+  ansible.builtin.assert:
+    that:
+      - aws_region is defined
+      - aws_infra_admin_cidrs | length > 0
+      - "'0.0.0.0/0' not in aws_infra_admin_cidrs + aws_infra_extra_ssh_cidrs"
+      - aws_infra_os in aws_infra_ami_catalog
+      - aws_infra_web_instance_count | int > 0
+    fail_msg: >-
+      Invalid configuration: aws_infra_admin_cidrs must list at least one CIDR
+      and must never open SSH to the whole Internet (0.0.0.0/0).
+    quiet: true
+
+- name: Provision network layer
+  ansible.builtin.import_tasks: network.yml
+
+- name: Provision security layer
+  ansible.builtin.import_tasks: security.yml
+
+- name: Provision compute layer
+  ansible.builtin.import_tasks: compute.yml

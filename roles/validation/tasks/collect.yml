@@ -1,0 +1,72 @@
+---
+- name: Gather service states
+  ansible.builtin.service_facts:
+
+- name: Gather listening TCP ports
+  community.general.listen_ports_facts:
+
+- name: Read effective sshd configuration
+  ansible.builtin.command:
+    cmd: /usr/sbin/sshd -T
+  register: validation_sshd
+  changed_when: false
+  check_mode: false
+  failed_when: false
+
+- name: Read sshd_config permissions
+  ansible.builtin.stat:
+    path: /etc/ssh/sshd_config
+  register: validation_sshd_config
+
+- name: Read kernel parameters
+  ansible.builtin.command:
+    cmd: "sysctl {{ validation_expected_sysctl | join(' ') }}"
+  register: validation_sysctl
+  changed_when: false
+  check_mode: false
+  failed_when: false
+
+- name: Read nftables ruleset
+  ansible.builtin.command:
+    cmd: nft list table inet hardening
+  register: validation_nft
+  changed_when: false
+  check_mode: false
+  failed_when: false
+  when: not validation_is_container
+
+- name: Read loaded audit rules
+  ansible.builtin.command:
+    cmd: auditctl -l
+  register: validation_audit
+  changed_when: false
+  check_mode: false
+  failed_when: false
+  when: not validation_is_container
+
+- name: Check automatic updates configuration
+  ansible.builtin.stat:
+    path: "{{ validation_updates_marker[ansible_facts['os_family']] }}"
+  register: validation_updates
+
+- name: Probe node_exporter metrics endpoint
+  ansible.builtin.uri:
+    url: "{{ validation_node_exporter_url }}"
+    return_content: true
+  register: validation_metrics
+  failed_when: false
+
+- name: Probe application over HTTPS
+  ansible.builtin.uri:
+    url: "{{ validation_app_https_url }}"
+    validate_certs: false
+  register: validation_https
+  failed_when: false
+
+- name: Probe application over plain HTTP
+  ansible.builtin.uri:
+    url: "{{ validation_app_http_url }}"
+    follow_redirects: none
+    status_code: [301, 308]
+  register: validation_http
+  failed_when: false

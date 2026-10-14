@@ -1,0 +1,28 @@
+---
+name: Temporary SSH access for the runner
+description: Opens (or closes) SSH on the web Security Group for this runner's public IP only
+
+inputs:
+  action:
+    description: open | close
+    required: true
+  environment:
+    description: Target environment (dev | prod)
+    required: true
+
+outputs:
+  cidr:
+    description: Runner public IP as a /32 CIDR
+    value: ${{ steps.ip.outputs.cidr }}
+
+runs:
+  using: composite
+  steps:
+    - name: Detect runner public IP
+      id: ip
+      shell: bash
+      run: echo "cidr=$(curl -fsS https://checkip.amazonaws.com | tr -d '[:space:]')/32" >> "$GITHUB_OUTPUT"
+
+    - name: Update Security Group
+      shell: bash
+      run: scripts/ci-ssh-access.sh "${{ inputs.action }}" "${{ inputs.environment }}" "${{ steps.ip.outputs.cidr }}"

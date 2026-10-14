@@ -1,0 +1,8 @@
+---
+app_deploy_packages:
+  - nginx
+  - python3
+  - python3-cryptography
+  - python3-setuptools
+app_deploy_nginx_user: nginx
+app_deploy_python: /usr/bin/python3

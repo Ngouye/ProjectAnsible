@@ -1,0 +1,43 @@
+---
+- name: Load OS family variables
+  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
+  tags: [always]
+
+- name: Remove legacy and insecure packages
+  ansible.builtin.package:
+    name: "{{ hardening_packages_absent }}"
+    state: absent
+
+- name: Harden SSH daemon
+  ansible.builtin.import_tasks: ssh.yml
+  tags: [hardening, ssh]
+
+- name: Harden kernel parameters and modules
+  ansible.builtin.import_tasks: kernel.yml
+  tags: [hardening, kernel]
+
+- name: Configure host firewall
+  ansible.builtin.import_tasks: firewall.yml
+  when:
+    - hardening_firewall_enabled | bool
+    - not hardening_is_container
+  tags: [hardening, firewall]
+
+- name: Configure audit framework
+  ansible.builtin.import_tasks: auditd.yml
+  when: hardening_auditd_enabled | bool
+  tags: [hardening, auditd]
+
+- name: Configure brute-force protection
+  ansible.builtin.import_tasks: fail2ban.yml
+  when: hardening_fail2ban_enabled | bool
+  tags: [hardening, fail2ban]
+
+- name: Configure automatic security updates
+  ansible.builtin.import_tasks: updates.yml
+  when: hardening_auto_updates_enabled | bool
+  tags: [hardening, updates]
+
+- name: Harden accounts, sessions and logs
+  ansible.builtin.import_tasks: system.yml
+  tags: [hardening, system]

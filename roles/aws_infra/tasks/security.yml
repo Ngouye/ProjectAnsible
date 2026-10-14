@@ -1,0 +1,52 @@
+---
+- name: Create web security group (least privilege)
+  amazon.aws.ec2_security_group:
+    name: "{{ aws_infra_name_prefix }}-web-sg"
+    description: "Web tier - HTTP/HTTPS public, SSH restricted, node_exporter VPC only"
+    vpc_id: "{{ aws_infra_vpc.vpc.id }}"
+    region: "{{ aws_region }}"
+    rules:
+      - proto: tcp
+        ports: [22]
+        cidr_ip: "{{ aws_infra_admin_cidrs + aws_infra_extra_ssh_cidrs }}"
+        rule_desc: SSH from admin networks only
+      - proto: tcp
+        ports: [80, 443]
+        cidr_ip: 0.0.0.0/0
+        rule_desc: Public HTTP/HTTPS
+      - proto: tcp
+        ports: [9100]
+        cidr_ip: "{{ aws_infra_monitoring_cidrs }}"
+        rule_desc: Prometheus node_exporter
+    # Egress restricted to what the servers need (packages, CloudWatch, SSM).
+    # DNS, NTP (169.254.169.123) and IMDS are link-local and not filtered by SGs.
+    rules_egress:
+      - proto: tcp
+        ports: [80, 443]
+        cidr_ip: 0.0.0.0/0
+        rule_desc: HTTP/HTTPS outbound (repositories, AWS APIs)
+    purge_rules: true
+    purge_rules_egress: true
+    tags: "{{ aws_infra_tags | combine({'Name': aws_infra_name_prefix ~ '-web-sg'}) }}"
+    state: present
+  register: aws_infra_web_sg
+
+- name: Import SSH public key
+  amazon.aws.ec2_key:
+    name: "{{ aws_infra_ssh_key_name }}"
+    key_material: "{{ lookup('ansible.builtin.file', aws_infra_ssh_public_key_path | expanduser) }}"
+    region: "{{ aws_region }}"
+    tags: "{{ aws_infra_tags }}"
+    state: present
+
+- name: Create IAM role and instance profile for EC2
+  amazon.aws.iam_role:
+    name: "{{ aws_infra_name_prefix }}-ec2-role"
+    description: "EC2 role for {{ aws_infra_name_prefix }} - CloudWatch agent and SSM"
+    assume_role_policy_document: "{{ lookup('ansible.builtin.file', 'ec2-trust-policy.json') }}"
+    managed_policies: "{{ aws_infra_iam_managed_policies }}"
+    purge_policies: true
+    create_instance_profile: true
+    tags: "{{ aws_infra_tags }}"
+    state: present
+  register: aws_infra_iam_role

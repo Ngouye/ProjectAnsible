@@ -1,0 +1,48 @@
+---
+# ---------------------------------------------------------------------------
+# Environment: prod
+# ---------------------------------------------------------------------------
+project_name: ansible-aws-automation
+env_name: prod
+aws_region: eu-west-3
+
+ansible_ssh_private_key_file: "~/.ssh/{{ project_name }}"
+
+# --- AWS infrastructure (role aws_infra) ------------------------------------
+aws_infra_vpc_cidr: 10.20.0.0/16
+aws_infra_public_subnets:
+  - cidr: 10.20.1.0/24
+    az_suffix: a
+  - cidr: 10.20.2.0/24
+    az_suffix: b
+  - cidr: 10.20.3.0/24
+    az_suffix: c
+aws_infra_os: ubuntu
+aws_infra_instance_type: t3.small
+aws_infra_web_instance_count: 3
+aws_infra_ssh_public_key_path: "~/.ssh/{{ project_name }}.pub"
+aws_infra_termination_protection: true
+aws_infra_detailed_monitoring: true
+# Production: SSH only from the company VPN / bastion
+aws_infra_admin_cidrs:
+  - 198.51.100.0/28
+
+# Temporary SSH access for the CI runner, added to the Security Group by the
+# pipeline (-e) so that provisioning does not purge it during the run
+ci_runner_cidrs: []
+
+# --- Hardening ----------------------------------------------------------------
+hardening_monitoring_cidrs:
+  - "{{ aws_infra_vpc_cidr }}"
+hardening_auditd_immutable: true
+
+# --- Monitoring ---------------------------------------------------------------
+monitoring_cloudwatch_enabled: true
+monitoring_alarm_sns_topic_arn: ""
+
+# --- Application --------------------------------------------------------------
+app_deploy_env: "{{ env_name }}"
+app_deploy_server_name: "_"
+app_deploy_secret_key: >-
+  {{ vault_app_secret_key if vault_app_secret_key is defined
+     else lookup('amazon.aws.ssm_parameter', '/' ~ project_name ~ '/' ~ env_name ~ '/app_secret_key', region=aws_region) }}

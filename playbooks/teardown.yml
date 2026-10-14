@@ -1,0 +1,25 @@
+---
+# Destroys every AWS resource of the environment.
+#   ansible-playbook playbooks/teardown.yml -e confirm_teardown=yes
+- name: Destroy AWS infrastructure
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Require explicit confirmation
+      ansible.builtin.assert:
+        that: confirm_teardown | default('no') == 'yes'
+        fail_msg: "Refusing to destroy '{{ env_name }}' without -e confirm_teardown=yes"
+        quiet: true
+
+    - name: Delete CloudWatch alarms
+      amazon.aws.cloudwatch_metric_alarm:
+        region: "{{ aws_region }}"
+        name: "{{ item.0 }}-{{ item.1 }}"
+        state: absent
+      loop: "{{ groups['role_web'] | default([]) | product(['cpu-high', 'system-check-failed', 'disk_used_percent-high', 'mem_used_percent-high']) | list }}"
+
+    - name: Destroy infrastructure
+      ansible.builtin.include_role:
+        name: aws_infra
+        tasks_from: teardown

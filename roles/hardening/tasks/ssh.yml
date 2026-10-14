@@ -1,0 +1,35 @@
+---
+# Host keys are normally generated on first boot; containers may not have them yet
+- name: Generate missing SSH host keys
+  ansible.builtin.command:
+    cmd: ssh-keygen -A
+    creates: /etc/ssh/ssh_host_ed25519_key
+
+- name: Ensure SSH privilege separation directory exists
+  ansible.builtin.file:
+    path: /run/sshd
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Deploy login banner for SSH
+  ansible.builtin.copy:
+    content: "{{ hardening_banner }}"
+    dest: /etc/issue.net
+    owner: root
+    group: root
+    mode: "0644"
+
+# The configuration is validated by sshd itself before replacing the live file:
+# a typo can never lock us out of the server.
+- name: Deploy hardened sshd configuration
+  ansible.builtin.template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: "0600"
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Restart sshd

@@ -1,0 +1,8 @@
+---
+# The verifier is the production compliance role: what is tested in CI is
+# exactly what is checked on the EC2 instances after each deployment.
+- name: Verify
+  hosts: all
+  become: true
+  roles:
+    - role: validation

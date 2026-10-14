@@ -1,0 +1,29 @@
+---
+# Dynamic inventory for production — same logic as dev, filtered on Environment=prod
+plugin: amazon.aws.aws_ec2
+
+regions:
+  - eu-west-3
+
+filters:
+  instance-state-name: running
+  tag:Project: ansible-aws-automation
+  tag:Environment: prod
+
+hostnames:
+  - tag:Name
+  - instance-id
+
+keyed_groups:
+  - key: tags.Role
+    prefix: role
+  - key: tags.Environment
+    prefix: env
+  - key: tags.OS
+    prefix: os
+  - key: placement.availability_zone
+    prefix: az
+
+compose:
+  ansible_host: public_ip_address | default(private_ip_address)
+  ansible_user: "'ubuntu' if tags.OS | default('ubuntu') == 'ubuntu' else 'ec2-user'"

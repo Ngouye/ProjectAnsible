@@ -1,0 +1,53 @@
+---
+# Naming / tagging
+aws_infra_name_prefix: "{{ project_name }}-{{ env_name }}"
+aws_infra_tags:
+  Project: "{{ project_name }}"
+  Environment: "{{ env_name }}"
+  ManagedBy: ansible
+  Owner: platform-team
+
+# Network
+aws_infra_vpc_cidr: 10.10.0.0/16
+aws_infra_public_subnets:
+  - cidr: 10.10.1.0/24
+    az_suffix: a
+  - cidr: 10.10.2.0/24
+    az_suffix: b
+
+# Admin networks allowed on SSH (0.0.0.0/0 is refused by the role)
+aws_infra_admin_cidrs: []
+# Temporary SSH access (e.g. the GitHub Actions runner IP, opened then closed by the pipeline)
+aws_infra_extra_ssh_cidrs: "{{ ci_runner_cidrs | default([]) }}"
+# Networks allowed to scrape node_exporter (Prometheus)
+aws_infra_monitoring_cidrs:
+  - "{{ aws_infra_vpc_cidr }}"
+
+# Compute
+aws_infra_os: ubuntu
+aws_infra_architecture: x86_64
+aws_infra_instance_type: t3.micro
+aws_infra_web_instance_count: 2
+aws_infra_root_volume_size: 20
+aws_infra_termination_protection: false
+aws_infra_detailed_monitoring: false
+
+# SSH key pair (public key uploaded to AWS, private key stays on the workstation / CI secret)
+aws_infra_ssh_key_name: "{{ aws_infra_name_prefix }}"
+aws_infra_ssh_public_key_path: "~/.ssh/{{ project_name }}.pub"
+
+# AMI catalogue: always the latest official image, looked up at runtime
+aws_infra_ami_catalog:
+  ubuntu:
+    owner: "099720109477" # Canonical
+    name: "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-{{ 'amd64' if aws_infra_architecture == 'x86_64' else 'arm64' }}-server-*"
+  amazonlinux:
+    owner: amazon
+    name: "al2023-ami-2023.*-{{ aws_infra_architecture }}"
+
+# Least-privilege IAM instance role: CloudWatch agent + SSM Session Manager
+aws_infra_iam_managed_policies:
+  - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+  - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+aws_infra_ssh_wait_timeout: 300

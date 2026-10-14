@@ -1,0 +1,105 @@
+---
+# --- Password and session policy ---------------------------------------------
+- name: Configure password aging and default umask
+  ansible.builtin.lineinfile:
+    path: /etc/login.defs
+    regexp: "^{{ item.key }}\\s"
+    line: "{{ item.key }}\t{{ item.value }}"
+    mode: "0644"
+  loop: "{{ hardening_login_defs | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Log every sudo command and force a pseudo-terminal
+  ansible.builtin.template:
+    src: sudoers-hardening.j2
+    dest: /etc/sudoers.d/00-hardening
+    owner: root
+    group: root
+    mode: "0440"
+    validate: /usr/sbin/visudo -cf %s
+
+- name: Deploy local login banner
+  ansible.builtin.copy:
+    content: "{{ hardening_banner }}"
+    dest: /etc/issue
+    owner: root
+    group: root
+    mode: "0644"
+
+# --- Core dumps (may leak secrets from memory) ------------------------------
+- name: Disable core dumps for all users
+  ansible.builtin.copy:
+    content: |
+      # {{ ansible_managed }}
+      * hard core 0
+    dest: /etc/security/limits.d/99-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Create systemd-coredump drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/coredump.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Disable systemd-coredump storage
+  ansible.builtin.copy:
+    content: |
+      # {{ ansible_managed }}
+      [Coredump]
+      Storage=none
+      ProcessSizeMax=0
+    dest: /etc/systemd/coredump.conf.d/99-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Disable Ctrl-Alt-Del reboot
+  ansible.builtin.systemd_service:
+    name: ctrl-alt-del.target
+    masked: true
+
+# --- Logs ----------------------------------------------------------------------
+- name: Create journald drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Persist and bound the systemd journal
+  ansible.builtin.template:
+    src: journald-hardening.conf.j2
+    dest: /etc/systemd/journald.conf.d/99-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart journald
+
+# --- Scheduled tasks ----------------------------------------------------------
+- name: Find cron configuration paths
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /etc/crontab
+    - /etc/cron.hourly
+    - /etc/cron.daily
+    - /etc/cron.weekly
+    - /etc/cron.monthly
+    - /etc/cron.d
+  register: hardening_cron_paths
+
+- name: Restrict cron configuration to root
+  ansible.builtin.file:
+    path: "{{ item.item }}"
+    owner: root
+    group: root
+    mode: "{{ '0700' if item.stat.isdir else '0600' }}"
+  loop: "{{ hardening_cron_paths.results | selectattr('stat.exists') | list }}"
+  loop_control:
+    label: "{{ item.item }}"

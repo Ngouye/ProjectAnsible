@@ -1,0 +1,4 @@
+---
+# Kernel-level controls (sysctl, auditd, firewall) cannot be applied inside a
+# container: they are skipped during Molecule tests and fully applied on EC2.
+hardening_is_container: "{{ ansible_facts['virtualization_type'] | default('') in ['docker', 'container', 'containerd', 'podman', 'lxc'] }}"

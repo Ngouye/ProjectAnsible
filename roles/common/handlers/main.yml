@@ -1,0 +1,6 @@
+---
+- name: Restart chrony
+  ansible.builtin.systemd_service:
+    name: "{{ common_chrony_service }}"
+    state: restarted
+  when: not common_is_container

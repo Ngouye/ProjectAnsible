@@ -1,0 +1,22 @@
+---
+# Step 5 — Compliance validation: every control is checked on every host,
+# a JSON report per host + a consolidated Markdown report are written to reports/
+- name: Validate configuration compliance
+  hosts: role_web
+  become: true
+  roles:
+    - role: validation
+      tags: [validate]
+
+- name: Publish consolidated compliance report
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: [validate]
+  tasks:
+    - name: Render Markdown report
+      ansible.builtin.include_role:
+        name: validation
+        tasks_from: report
+      vars:
+        validation_report_hosts: "{{ groups['role_web'] | default([]) }}"

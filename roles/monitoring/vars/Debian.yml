@@ -1,0 +1,6 @@
+---
+monitoring_cloudwatch_os_log_files:
+  - path: /var/log/auth.log
+    group: auth
+  - path: /var/log/syslog
+    group: syslog

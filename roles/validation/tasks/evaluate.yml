@@ -1,0 +1,94 @@
+---
+- name: Compute configuration drift
+  ansible.builtin.set_fact:
+    # Expected "key value" lines missing from the live configuration
+    validation_sshd_drift: >-
+      {{ validation_expected_sshd | dictsort | map('join', ' ') | list
+         | difference(validation_sshd.stdout_lines | default([])) }}
+    validation_sysctl_drift: >-
+      {{ validation_expected_sysctl | dictsort | map('join', ' = ') | list
+         | difference(validation_sysctl.stdout_lines | default([])) }}
+    validation_services_down: >-
+      {{ (validation_required_services + ([] if validation_is_container else validation_required_host_services))
+         | difference(validation_running_services) }}
+    validation_unexpected_ports: >-
+      {{ ansible_facts['tcp_listen'] | default([])
+         | rejectattr('address', 'match', '^(127[.]|::1$)')
+         | map(attribute='port') | map('int') | unique | list
+         | difference(validation_allowed_tcp_ports) }}
+    validation_missing_headers: >-
+      {{ validation_required_headers
+         | difference(validation_https | dict2items | map(attribute='key') | list) }}
+  vars:
+    validation_running_services: >-
+      {{ ansible_facts['services'] | dict2items
+         | selectattr('value.state', 'equalto', 'running')
+         | map(attribute='key') | map('regex_replace', '[.]service$', '') | list }}
+
+- name: Build compliance matrix
+  ansible.builtin.set_fact:
+    validation_checks:
+      - id: SSH-01
+        title: Effective sshd configuration matches the hardening baseline
+        applicable: true
+        passed: "{{ validation_sshd.rc | default(1) == 0 and validation_sshd_drift | length == 0 }}"
+        details: "{{ validation_sshd_drift }}"
+      - id: SSH-02
+        title: sshd_config is readable by root only (0600)
+        applicable: true
+        passed: "{{ validation_sshd_config.stat.exists and validation_sshd_config.stat.mode == '0600' }}"
+        details: "{{ validation_sshd_config.stat.mode | default('missing') }}"
+      - id: KRN-01
+        title: Kernel network and memory protections (sysctl) are active
+        applicable: "{{ not validation_is_container }}"
+        passed: "{{ validation_sysctl_drift | length == 0 }}"
+        details: "{{ validation_sysctl_drift }}"
+      - id: NET-01
+        title: Host firewall is active with a default-deny inbound policy
+        applicable: "{{ not validation_is_container }}"
+        passed: "{{ validation_nft.rc | default(1) == 0 and 'policy drop' in validation_nft.stdout | default('') }}"
+        details: ""
+      - id: NET-02
+        title: No unexpected TCP port listening on a public interface
+        applicable: true
+        passed: "{{ validation_unexpected_ports | length == 0 }}"
+        details: "{{ validation_unexpected_ports }}"
+      - id: AUD-01
+        title: auditd is running with the hardening rules loaded
+        applicable: "{{ not validation_is_container }}"
+        passed: "{{ 'identity' in validation_audit.stdout | default('') }}"
+        details: ""
+      - id: SVC-01
+        title: Required services are running
+        applicable: true
+        passed: "{{ validation_services_down | length == 0 }}"
+        details: "{{ validation_services_down }}"
+      - id: UPD-01
+        title: Automatic security updates are configured
+        applicable: true
+        passed: "{{ validation_updates.stat.exists }}"
+        details: ""
+      - id: MON-01
+        title: node_exporter exposes Prometheus metrics
+        applicable: true
+        passed: "{{ validation_metrics.status | default(0) == 200 and 'node_cpu_seconds_total' in validation_metrics.content | default('') }}"
+        details: ""
+      - id: APP-01
+        title: Application is healthy over HTTPS
+        applicable: true
+        passed: "{{ validation_https.status | default(0) == 200 }}"
+        details: "{{ validation_https.status | default('unreachable') }}"
+      - id: APP-02
+        title: Plain HTTP is redirected to HTTPS
+        applicable: true
+        passed: "{{ validation_http.status | default(0) in [301, 308] and validation_http.location | default('') is match('https://') }}"
+        details: "{{ validation_http.location | default('') }}"
+      - id: APP-03
+        title: Security headers are set (HSTS, CSP, nosniff, frame options)
+        applicable: true
+        passed: "{{ validation_missing_headers | length == 0 }}"
+        details: "{{ validation_missing_headers }}"
+
+- name: List failed controls
+  ansible.builtin.set_fact:
+    validation_failed: "{{ validation_checks | selectattr('applicable') | rejectattr('passed') | list }}"

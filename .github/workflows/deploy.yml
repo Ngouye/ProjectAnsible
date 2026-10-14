@@ -1,0 +1,100 @@
+---
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [dev, prod]
+        default: dev
+      playbook:
+        description: Playbook to run
+        type: choice
+        options: [site, deploy, harden, monitoring, validate]
+        default: site
+
+permissions:
+  contents: read
+  id-token: write # OIDC: no long-lived AWS keys stored in GitHub
+
+env:
+  TARGET_ENV: ${{ inputs.environment || 'dev' }}
+  PLAYBOOK: ${{ inputs.playbook || 'site' }}
+  AWS_REGION: eu-west-3
+
+jobs:
+  ci:
+    name: Quality gate
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy to ${{ inputs.environment || 'dev' }}
+    needs: ci
+    # Automatic deployment on push only once AWS is wired (repository variable DEPLOY_ENABLED=true)
+    if: github.event_name == 'workflow_dispatch' || vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    # GitHub Environment: "prod" requires a manual approval (protection rule)
+    environment: ${{ inputs.environment || 'dev' }}
+    concurrency:
+      group: deploy-${{ inputs.environment || 'dev' }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-ansible
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: gha-${{ github.run_id }}
+
+      - name: Install SSH deploy key
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/ansible-aws-automation
+          chmod 600 ~/.ssh/ansible-aws-automation
+          ssh-keygen -y -f ~/.ssh/ansible-aws-automation > ~/.ssh/ansible-aws-automation.pub
+
+      - name: Open SSH for this runner only
+        id: ssh
+        uses: ./.github/actions/ci-ssh-access
+        with:
+          action: open
+          environment: ${{ env.TARGET_ENV }}
+
+      - name: Run playbooks/${{ env.PLAYBOOK }}.yml
+        run: |
+          ansible-playbook "playbooks/${PLAYBOOK}.yml" \
+            -i "inventories/${TARGET_ENV}/aws_ec2.yml" \
+            -e '{"ci_runner_cidrs": ["${{ steps.ssh.outputs.cidr }}"]}' \
+            -e "app_deploy_version=${GITHUB_SHA::7}"
+
+      # Always executed, even if the deployment failed
+      - name: Close SSH for this runner
+        if: always() && steps.ssh.outcome == 'success'
+        uses: ./.github/actions/ci-ssh-access
+        with:
+          action: close
+          environment: ${{ env.TARGET_ENV }}
+
+      - name: Publish compliance report
+        if: always()
+        run: |
+          if [ -f reports/compliance-report.md ]; then
+            cat reports/compliance-report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-${{ env.TARGET_ENV }}-${{ github.run_number }}
+          path: reports/
+          if-no-files-found: ignore
+          retention-days: 30

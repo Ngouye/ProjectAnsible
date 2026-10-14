@@ -1,0 +1,129 @@
+---
+# =============================================================================
+# Linux hardening — values inspired by the CIS Benchmarks (Ubuntu 24.04 / RHEL 9)
+# =============================================================================
+
+# --- SSH ---------------------------------------------------------------------
+hardening_ssh_port: 22
+hardening_ssh_allowed_groups:
+  - sshusers
+hardening_ssh_max_auth_tries: 3
+hardening_ssh_max_sessions: 10
+hardening_ssh_login_grace_time: 30
+hardening_ssh_client_alive_interval: 300
+hardening_ssh_client_alive_count_max: 2
+hardening_ssh_kex_algorithms:
+  - curve25519-sha256
+  - curve25519-sha256@libssh.org
+  - diffie-hellman-group16-sha512
+  - diffie-hellman-group18-sha512
+hardening_ssh_ciphers:
+  - chacha20-poly1305@openssh.com
+  - aes256-gcm@openssh.com
+  - aes128-gcm@openssh.com
+  - aes256-ctr
+  - aes192-ctr
+  - aes128-ctr
+hardening_ssh_macs:
+  - hmac-sha2-512-etm@openssh.com
+  - hmac-sha2-256-etm@openssh.com
+
+# --- Kernel (sysctl) ---------------------------------------------------------
+hardening_sysctl:
+  # Network: no routing, no redirects, no source routing, anti-spoofing
+  net.ipv4.ip_forward: 0
+  net.ipv4.conf.all.send_redirects: 0
+  net.ipv4.conf.default.send_redirects: 0
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv4.conf.default.accept_redirects: 0
+  net.ipv4.conf.all.secure_redirects: 0
+  net.ipv4.conf.default.secure_redirects: 0
+  net.ipv6.conf.all.accept_redirects: 0
+  net.ipv6.conf.default.accept_redirects: 0
+  net.ipv4.conf.all.accept_source_route: 0
+  net.ipv4.conf.default.accept_source_route: 0
+  net.ipv4.conf.all.rp_filter: 1
+  net.ipv4.conf.default.rp_filter: 1
+  net.ipv4.conf.all.log_martians: 1
+  net.ipv4.conf.default.log_martians: 1
+  net.ipv4.icmp_echo_ignore_broadcasts: 1
+  net.ipv4.icmp_ignore_bogus_error_responses: 1
+  net.ipv4.tcp_syncookies: 1
+  # Memory / process protections
+  kernel.randomize_va_space: 2
+  kernel.kptr_restrict: 2
+  kernel.dmesg_restrict: 1
+  fs.suid_dumpable: 0
+  fs.protected_hardlinks: 1
+  fs.protected_symlinks: 1
+
+# Kernel modules that are useless on a cloud web server
+hardening_disabled_modules:
+  - cramfs
+  - freevxfs
+  - hfs
+  - hfsplus
+  - jffs2
+  - udf
+  - usb-storage
+  - dccp
+  - sctp
+  - rds
+  - tipc
+
+# --- Host firewall (nftables) -------------------------------------------------
+hardening_firewall_enabled: true
+# Empty = SSH accepted from any source at host level: source IP filtering is
+# done by the AWS Security Group, which the CI pipeline opens/closes dynamically.
+# Set CIDRs here to add a second IP allow-list on the host itself.
+hardening_ssh_allowed_cidrs: []
+hardening_firewall_public_tcp_ports:
+  - 80
+  - 443
+hardening_monitoring_cidrs:
+  - 10.0.0.0/8
+hardening_monitoring_tcp_ports:
+  - 9100
+
+# --- Audit (auditd) ----------------------------------------------------------
+hardening_auditd_enabled: true
+# true = rules locked until next reboot (-e 2). Recommended in production.
+hardening_auditd_immutable: false
+hardening_auditd_settings:
+  max_log_file: 50
+  num_logs: 5
+  max_log_file_action: ROTATE
+  space_left_action: SYSLOG
+  admin_space_left_action: SUSPEND
+
+# --- Brute-force protection (fail2ban) --------------------------------------------
+# fail2ban is not packaged for Amazon Linux 2023: enabled on Debian/Ubuntu only
+hardening_fail2ban_enabled: "{{ ansible_facts['os_family'] == 'Debian' }}"
+hardening_fail2ban_bantime: 1h
+hardening_fail2ban_findtime: 10m
+hardening_fail2ban_maxretry: 5
+hardening_fail2ban_ignoreip:
+  - 127.0.0.1/8
+  - "::1"
+
+# --- Automatic security updates ----------------------------------------------
+hardening_auto_updates_enabled: true
+hardening_auto_reboot: false
+hardening_auto_reboot_time: "03:30"
+
+# --- Accounts & sessions ------------------------------------------------------
+hardening_login_defs:
+  PASS_MAX_DAYS: 90
+  PASS_MIN_DAYS: 1
+  PASS_WARN_AGE: 7
+  UMASK: "027"
+hardening_sudo_timestamp_timeout: 5
+
+# --- Logs -------------------------------------------------------------------
+hardening_journald_max_use: 500M
+
+hardening_banner: |
+  ******************************************************************
+  * Authorized access only. All activity is monitored and logged.  *
+  * Disconnect immediately if you are not an authorized user.      *
+  ******************************************************************

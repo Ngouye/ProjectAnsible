@@ -1,0 +1,32 @@
+---
+# --- Prometheus node_exporter -------------------------------------------------
+monitoring_node_exporter_enabled: true
+monitoring_node_exporter_version: 1.12.1
+monitoring_node_exporter_listen_address: "0.0.0.0:9100"
+monitoring_node_exporter_base_dir: /opt/node_exporter
+monitoring_node_exporter_textfile_dir: /var/lib/node_exporter/textfile
+monitoring_node_exporter_collectors:
+  - systemd
+  - processes
+
+# --- Amazon CloudWatch agent --------------------------------------------------
+monitoring_cloudwatch_enabled: true
+monitoring_cloudwatch_namespace: "{{ project_name | default('ansible-aws-automation') }}/{{ env_name | default('dev') }}"
+monitoring_cloudwatch_log_group_prefix: "/{{ project_name | default('ansible-aws-automation') }}/{{ env_name | default('dev') }}"
+monitoring_cloudwatch_log_retention_days: 30
+monitoring_cloudwatch_metrics_interval: 60
+# Official AWS signing key — the package is refused if its signature does not match
+monitoring_cloudwatch_gpg_key_url: https://amazoncloudwatch-agent.s3.amazonaws.com/assets/amazon-cloudwatch-agent.gpg
+monitoring_cloudwatch_gpg_fingerprint: 937616F3450B7D806CBD9725D58167303B789C72
+monitoring_cloudwatch_base_url: https://amazoncloudwatch-agent.s3.amazonaws.com
+
+# Log files shipped to CloudWatch Logs (in addition to the OS-specific ones)
+monitoring_cloudwatch_log_files:
+  - path: /var/log/audit/audit.log
+    group: audit
+  - path: /var/log/sudo.log
+    group: sudo
+  - path: /var/log/nginx/access.log
+    group: nginx-access
+  - path: /var/log/nginx/error.log
+    group: nginx-error

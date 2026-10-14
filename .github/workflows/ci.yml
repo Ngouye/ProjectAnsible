@@ -1,0 +1,67 @@
+---
+name: CI
+
+# On main, this workflow runs as the quality gate of deploy.yml (workflow_call)
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint & syntax
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-ansible
+
+      - name: yamllint
+        run: yamllint --strict .
+
+      - name: ansible-lint (production profile)
+        run: ansible-lint --profile production
+
+      - name: Syntax check of every playbook
+        run: |
+          for playbook in playbooks/*.yml; do
+            echo "::group::${playbook}"
+            ansible-playbook -i localhost, --syntax-check "${playbook}"
+            echo "::endgroup::"
+          done
+
+  secrets-scan:
+    name: Secrets scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  molecule:
+    name: Molecule (Ubuntu 24.04 + Rocky 9)
+    runs-on: ubuntu-24.04
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-ansible
+
+      - name: Converge, idempotence and compliance verification
+        run: molecule test
+        env:
+          PY_COLORS: "1"
+          ANSIBLE_FORCE_COLOR: "1"

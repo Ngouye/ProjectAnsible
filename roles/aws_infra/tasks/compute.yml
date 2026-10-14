@@ -1,0 +1,78 @@
+---
+- name: Look up the latest official AMI
+  amazon.aws.ec2_ami_info:
+    region: "{{ aws_region }}"
+    owners:
+      - "{{ aws_infra_ami_catalog[aws_infra_os].owner }}"
+    filters:
+      name: "{{ aws_infra_ami_catalog[aws_infra_os].name }}"
+      architecture: "{{ aws_infra_architecture }}"
+      state: available
+  register: aws_infra_ami_search
+
+- name: Select the most recent AMI
+  ansible.builtin.set_fact:
+    aws_infra_ami: "{{ aws_infra_ami_search.images | sort(attribute='creation_date') | last }}"
+
+- name: Launch web instances across availability zones
+  amazon.aws.ec2_instance:
+    name: "{{ aws_infra_name_prefix }}-web-{{ '%02d' | format(item) }}"
+    region: "{{ aws_region }}"
+    image_id: "{{ aws_infra_ami.image_id }}"
+    instance_type: "{{ aws_infra_instance_type }}"
+    key_name: "{{ aws_infra_ssh_key_name }}"
+    vpc_subnet_id: "{{ aws_infra_subnet_ids[(item - 1) % (aws_infra_subnet_ids | length)] }}"
+    security_groups:
+      - "{{ aws_infra_web_sg.group_id }}"
+    iam_instance_profile: "{{ aws_infra_iam_role.iam_role.role_name }}"
+    # IMDSv2 mandatory: blocks SSRF attacks against the metadata endpoint
+    metadata_options:
+      http_endpoint: enabled
+      http_tokens: required
+      http_put_response_hop_limit: 1
+      instance_metadata_tags: enabled
+    volumes:
+      - device_name: "{{ aws_infra_ami.root_device_name }}"
+        ebs:
+          volume_size: "{{ aws_infra_root_volume_size }}"
+          volume_type: gp3
+          encrypted: true
+          delete_on_termination: true
+    termination_protection: "{{ aws_infra_termination_protection }}"
+    detailed_monitoring: "{{ aws_infra_detailed_monitoring }}"
+    tags: "{{ aws_infra_tags | combine({'Role': 'web', 'OS': aws_infra_os}) }}"
+    # Explicit filters: without them, a new AMI release would be seen as a
+    # different instance and a re-run would launch duplicates.
+    filters:
+      "tag:Name": "{{ aws_infra_name_prefix }}-web-{{ '%02d' | format(item) }}"
+      "tag:Environment": "{{ env_name }}"
+      instance-state-name: [pending, running, stopping, stopped]
+    wait: true
+    state: running
+  loop: "{{ range(1, aws_infra_web_instance_count | int + 1) | list }}"
+  loop_control:
+    label: "{{ aws_infra_name_prefix }}-web-{{ '%02d' | format(item) }}"
+  register: aws_infra_instances
+  # The IAM instance profile can take a few seconds to propagate
+  retries: 3
+  delay: 15
+  until: aws_infra_instances is succeeded
+
+- name: Collect public IP addresses
+  ansible.builtin.set_fact:
+    aws_infra_public_ips: "{{ aws_infra_instances.results | map(attribute='instances') | flatten | map(attribute='public_ip_address') | list }}"
+
+- name: Wait for SSH to come up
+  ansible.builtin.wait_for:
+    host: "{{ item }}"
+    port: 22
+    search_regex: OpenSSH
+    timeout: "{{ aws_infra_ssh_wait_timeout }}"
+  loop: "{{ aws_infra_public_ips }}"
+
+- name: Refresh dynamic inventory with the new instances
+  ansible.builtin.meta: refresh_inventory
+
+- name: Show provisioned instances
+  ansible.builtin.debug:
+    msg: "{{ aws_infra_instances.results | map(attribute='instances') | flatten | items2dict(key_name='instance_id', value_name='public_ip_address') }}"

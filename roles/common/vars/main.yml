@@ -1,0 +1,2 @@
+---
+common_is_container: "{{ ansible_facts['virtualization_type'] | default('') in ['docker', 'container', 'containerd', 'podman', 'lxc'] }}"

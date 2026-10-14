@@ -1,0 +1,55 @@
+---
+- name: Load OS family variables
+  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
+  tags: [always]
+
+- name: Check whether cloud-init is installed
+  ansible.builtin.stat:
+    path: /usr/bin/cloud-init
+  register: common_cloud_init
+
+# Prevents apt/dnf lock contention with cloud-init on a freshly booted instance
+- name: Wait for cloud-init to finish
+  ansible.builtin.command:
+    cmd: cloud-init status --wait
+  register: common_cloud_init_status
+  changed_when: false
+  # rc 2 = finished with recoverable warnings
+  failed_when: common_cloud_init_status.rc not in [0, 2]
+  when: common_cloud_init.stat.exists
+
+- name: Refresh apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Install base packages
+  ansible.builtin.package:
+    name: "{{ common_packages + common_packages_os }}"
+    state: present
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ common_timezone }}"
+  when: not common_is_container
+
+- name: Use Amazon Time Sync Service as preferred NTP source
+  ansible.builtin.lineinfile:
+    path: "{{ common_chrony_config }}"
+    regexp: "^server {{ common_aws_time_server | regex_escape }}"
+    line: "server {{ common_aws_time_server }} prefer iburst minpoll 4 maxpoll 4"
+    insertbefore: BOF
+    mode: "0644"
+  when: common_aws_time_sync | bool
+  notify: Restart chrony
+
+- name: Enable and start chrony
+  ansible.builtin.systemd_service:
+    name: "{{ common_chrony_service }}"
+    enabled: true
+    state: started
+  when: not common_is_container
+
+- name: Manage users and SSH access
+  ansible.builtin.import_tasks: users.yml

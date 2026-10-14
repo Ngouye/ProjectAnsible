@@ -1,0 +1,6 @@
+# {{ ansible_managed }}
+# Kernel modules that must never be loaded on this server.
+{% for module in hardening_disabled_modules %}
+install {{ module }} /bin/false
+blacklist {{ module }}
+{% endfor %}

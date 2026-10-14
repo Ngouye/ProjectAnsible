@@ -1,0 +1,63 @@
+---
+- name: Create node_exporter system user
+  ansible.builtin.user:
+    name: node_exporter
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+    state: present
+
+- name: Create node_exporter directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
+    mode: "0755"
+  loop:
+    - { path: "{{ monitoring_node_exporter_base_dir }}", owner: root }
+    - { path: "{{ monitoring_node_exporter_textfile_dir }}", owner: node_exporter }
+
+# The archive is checked against the sha256sums.txt published with the release
+- name: Download node_exporter (SHA-256 verified)
+  ansible.builtin.get_url:
+    url: "{{ monitoring_node_exporter_url }}"
+    dest: "{{ monitoring_node_exporter_base_dir }}/{{ monitoring_node_exporter_release }}.tar.gz"
+    checksum: "sha256:{{ monitoring_node_exporter_checksum_url }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Extract node_exporter
+  ansible.builtin.unarchive:
+    src: "{{ monitoring_node_exporter_base_dir }}/{{ monitoring_node_exporter_release }}.tar.gz"
+    dest: "{{ monitoring_node_exporter_base_dir }}"
+    remote_src: true
+    owner: root
+    group: root
+    creates: "{{ monitoring_node_exporter_base_dir }}/{{ monitoring_node_exporter_release }}/node_exporter"
+
+# Versioned directories + symlink: upgrading or rolling back is a symlink switch
+- name: Link node_exporter binary
+  ansible.builtin.file:
+    src: "{{ monitoring_node_exporter_base_dir }}/{{ monitoring_node_exporter_release }}/node_exporter"
+    dest: /usr/local/bin/node_exporter
+    state: link
+    force: true
+  notify: Restart node_exporter
+
+- name: Deploy node_exporter systemd unit (sandboxed)
+  ansible.builtin.template:
+    src: node_exporter.service.j2
+    dest: /etc/systemd/system/node_exporter.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart node_exporter
+
+- name: Enable and start node_exporter
+  ansible.builtin.systemd_service:
+    name: node_exporter
+    enabled: true
+    state: started
+    daemon_reload: true

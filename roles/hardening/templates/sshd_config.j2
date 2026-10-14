@@ -1,0 +1,58 @@
+# {{ ansible_managed }}
+#
+# Hardened OpenSSH server configuration (CIS-inspired).
+# Drop-in files from /etc/ssh/sshd_config.d/ are intentionally NOT included:
+# cloud-init or a package update cannot silently re-enable password logins.
+
+Port {{ hardening_ssh_port }}
+AddressFamily any
+
+HostKey /etc/ssh/ssh_host_ed25519_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_rsa_key
+
+# --- Cryptography: modern algorithms only -------------------------------
+KexAlgorithms {{ hardening_ssh_kex_algorithms | join(',') }}
+Ciphers {{ hardening_ssh_ciphers | join(',') }}
+MACs {{ hardening_ssh_macs | join(',') }}
+
+# --- Authentication: public key only, never root ------------------------
+PermitRootLogin no
+PubkeyAuthentication yes
+AuthenticationMethods publickey
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitEmptyPasswords no
+HostbasedAuthentication no
+IgnoreRhosts yes
+StrictModes yes
+UsePAM yes
+AllowGroups {{ hardening_ssh_allowed_groups | join(' ') }}
+
+MaxAuthTries {{ hardening_ssh_max_auth_tries }}
+MaxSessions {{ hardening_ssh_max_sessions }}
+MaxStartups 10:30:60
+LoginGraceTime {{ hardening_ssh_login_grace_time }}
+
+# --- Sessions: no forwarding, idle timeout -------------------------------
+ClientAliveInterval {{ hardening_ssh_client_alive_interval }}
+ClientAliveCountMax {{ hardening_ssh_client_alive_count_max }}
+TCPKeepAlive no
+X11Forwarding no
+AllowTcpForwarding no
+AllowAgentForwarding no
+AllowStreamLocalForwarding no
+PermitTunnel no
+GatewayPorts no
+PermitUserEnvironment no
+Compression no
+UseDNS no
+
+# --- Logging & banner ------------------------------------------------------
+SyslogFacility AUTH
+LogLevel VERBOSE
+PrintMotd no
+PrintLastLog yes
+Banner /etc/issue.net
+
+Subsystem sftp internal-sftp

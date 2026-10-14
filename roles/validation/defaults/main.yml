@@ -1,0 +1,55 @@
+---
+# Expected values are declared here on purpose, independently from the
+# hardening role: a test must not reuse the implementation it verifies.
+
+validation_fail_on_error: true
+validation_report_dir: "{{ playbook_dir }}/../reports"
+
+# Effective sshd configuration (output of "sshd -T")
+validation_expected_sshd:
+  permitrootlogin: "no"
+  passwordauthentication: "no"
+  kbdinteractiveauthentication: "no"
+  permitemptypasswords: "no"
+  pubkeyauthentication: "yes"
+  x11forwarding: "no"
+  allowtcpforwarding: "no"
+  allowagentforwarding: "no"
+  maxauthtries: "3"
+  loglevel: VERBOSE
+
+validation_expected_sysctl:
+  net.ipv4.ip_forward: "0"
+  net.ipv4.conf.all.accept_redirects: "0"
+  net.ipv4.conf.all.send_redirects: "0"
+  net.ipv4.conf.all.accept_source_route: "0"
+  net.ipv4.conf.all.rp_filter: "1"
+  net.ipv4.tcp_syncookies: "1"
+  kernel.randomize_va_space: "2"
+  kernel.kptr_restrict: "2"
+  kernel.dmesg_restrict: "1"
+  fs.suid_dumpable: "0"
+
+# Ports allowed to listen on a non-loopback address
+validation_allowed_tcp_ports:
+  - 22
+  - 80
+  - 443
+  - 9100
+
+validation_app_service: demo-app
+validation_required_services:
+  - nginx
+  - node_exporter
+  - "{{ validation_app_service }}"
+# Services that only exist on a real VM (kernel features)
+validation_required_host_services: "{{ ['auditd', 'nftables'] + (['fail2ban'] if ansible_facts['os_family'] == 'Debian' else []) }}"
+
+validation_app_https_url: https://127.0.0.1/health
+validation_app_http_url: http://127.0.0.1/
+validation_node_exporter_url: http://127.0.0.1:9100/metrics
+validation_required_headers:
+  - strict_transport_security
+  - x_content_type_options
+  - x_frame_options
+  - content_security_policy

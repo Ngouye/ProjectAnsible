@@ -1,0 +1,9 @@
+---
+# Step 1 — AWS infrastructure: VPC, subnets, Security Group, IAM role, EC2 instances
+- name: Provision AWS infrastructure
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: aws_infra
+      tags: [provision]

@@ -1,0 +1,50 @@
+---
+# --- Debian / Ubuntu: unattended-upgrades ------------------------------------
+- name: Install unattended-upgrades
+  ansible.builtin.apt:
+    name: unattended-upgrades
+    state: present
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Enable periodic security upgrades
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/apt/apt.conf.d/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - 20auto-upgrades
+    - 52unattended-upgrades-hardening
+  when: ansible_facts['os_family'] == 'Debian'
+
+# --- RHEL / Amazon Linux: dnf-automatic --------------------------------------
+- name: Install dnf-automatic
+  ansible.builtin.dnf:
+    name: dnf-automatic
+    state: present
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Apply security updates only
+  community.general.ini_file:
+    path: /etc/dnf/automatic.conf
+    section: commands
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+    mode: "0644"
+  loop:
+    - { option: upgrade_type, value: security }
+    - { option: apply_updates, value: "yes" }
+    - { option: reboot, value: "{{ 'when-needed' if hardening_auto_reboot | bool else 'never' }}" }
+  loop_control:
+    label: "{{ item.option }}"
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Enable dnf-automatic timer
+  ansible.builtin.systemd_service:
+    name: dnf-automatic.timer
+    enabled: true
+    state: started
+  when:
+    - ansible_facts['os_family'] == 'RedHat'
+    - not hardening_is_container

@@ -1,0 +1,9 @@
+---
+# "curl" is deliberately absent: Amazon Linux 2023 ships curl-minimal, which conflicts with it
+common_packages_os:
+  - iproute
+  - policycoreutils-python-utils
+  - python3-libselinux
+common_sudo_group: wheel
+common_chrony_config: /etc/chrony.conf
+common_chrony_service: chronyd

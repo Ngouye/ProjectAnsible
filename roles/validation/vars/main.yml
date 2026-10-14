@@ -1,0 +1,5 @@
+---
+validation_is_container: "{{ ansible_facts['virtualization_type'] | default('') in ['docker', 'container', 'containerd', 'podman', 'lxc'] }}"
+validation_updates_marker:
+  Debian: /etc/apt/apt.conf.d/20auto-upgrades
+  RedHat: /etc/dnf/automatic.conf

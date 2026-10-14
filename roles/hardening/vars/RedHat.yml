@@ -1,0 +1,15 @@
+---
+hardening_sshd_service: sshd
+hardening_nftables_config: /etc/sysconfig/nftables.conf
+hardening_auditd_packages:
+  - audit
+hardening_fail2ban_packages:
+  - fail2ban
+# Legacy clear-text services + firewalld (nftables is the single firewall manager)
+hardening_packages_absent:
+  - telnet
+  - rsh
+  - talk
+  - ypbind
+  - xinetd
+  - firewalld

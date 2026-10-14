@@ -1,0 +1,25 @@
+---
+- name: Check that the application secret is provided
+  ansible.builtin.assert:
+    that:
+      - app_deploy_secret_key | length >= 32
+    fail_msg: >-
+      app_deploy_secret_key is missing or too short (min. 32 chars).
+      Provide it through Ansible Vault (vault_app_secret_key) or AWS SSM Parameter Store.
+    quiet: true
+
+- name: Load OS family variables
+  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
+  tags: [always]
+
+- name: Prepare runtime, user and directories
+  ansible.builtin.import_tasks: prepare.yml
+
+- name: Generate TLS certificate
+  ansible.builtin.import_tasks: tls.yml
+
+- name: Configure nginx reverse proxy
+  ansible.builtin.import_tasks: nginx.yml
+
+- name: Deploy application release
+  ansible.builtin.import_tasks: release.yml

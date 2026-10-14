@@ -1,0 +1,24 @@
+# Python / tooling
+.venv/
+__pycache__/
+*.pyc
+
+# Ansible
+.cache/
+collections/
+*.retry
+reports/
+
+# Secrets — never committed
+.vault_pass
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+.env
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

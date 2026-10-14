@@ -1,0 +1,81 @@
+---
+# Step 3 — Monitoring agents on the servers + CloudWatch alarms on the AWS side
+- name: Install monitoring agents
+  hosts: role_web
+  become: true
+  roles:
+    - role: monitoring
+      tags: [monitoring]
+
+- name: Configure CloudWatch alarms
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: [monitoring, alarms]
+  vars:
+    alarm_actions: "{{ [monitoring_alarm_sns_topic_arn] if monitoring_alarm_sns_topic_arn | default('') | length > 0 else [] }}"
+    alarm_hosts: "{{ groups['role_web'] | default([]) }}"
+  tasks:
+    - name: Alarm on sustained high CPU usage
+      amazon.aws.cloudwatch_metric_alarm:
+        region: "{{ aws_region }}"
+        name: "{{ item }}-cpu-high"
+        description: CPU above 80% for 10 minutes
+        namespace: AWS/EC2
+        metric_name: CPUUtilization
+        statistic: Average
+        comparison: GreaterThanOrEqualToThreshold
+        threshold: 80
+        period: 300
+        evaluation_periods: 2
+        unit: Percent
+        dimensions:
+          InstanceId: "{{ hostvars[item]['instance_id'] }}"
+        alarm_actions: "{{ alarm_actions }}"
+        state: present
+      loop: "{{ alarm_hosts }}"
+
+    # EC2 auto-recovery: AWS migrates the instance to healthy hardware
+    - name: Alarm and auto-recover on system status check failure
+      amazon.aws.cloudwatch_metric_alarm:
+        region: "{{ aws_region }}"
+        name: "{{ item }}-system-check-failed"
+        description: Underlying hardware failure - trigger EC2 auto-recovery
+        namespace: AWS/EC2
+        metric_name: StatusCheckFailed_System
+        statistic: Maximum
+        comparison: GreaterThanOrEqualToThreshold
+        threshold: 1
+        period: 60
+        evaluation_periods: 2
+        dimensions:
+          InstanceId: "{{ hostvars[item]['instance_id'] }}"
+        alarm_actions: "{{ ['arn:aws:automate:' ~ aws_region ~ ':ec2:recover'] + alarm_actions }}"
+        state: present
+      loop: "{{ alarm_hosts }}"
+
+    # Custom metrics published by the CloudWatch agent (aggregated per InstanceId)
+    - name: Alarm on high disk and memory usage
+      amazon.aws.cloudwatch_metric_alarm:
+        region: "{{ aws_region }}"
+        name: "{{ item.0 }}-{{ item.1.metric }}-high"
+        description: "{{ item.1.metric }} above {{ item.1.threshold }}%"
+        namespace: "{{ project_name }}/{{ env_name }}"
+        metric_name: "{{ item.1.metric }}"
+        statistic: Maximum
+        comparison: GreaterThanOrEqualToThreshold
+        threshold: "{{ item.1.threshold }}"
+        period: 300
+        evaluation_periods: 2
+        dimensions:
+          InstanceId: "{{ hostvars[item.0]['instance_id'] }}"
+        alarm_actions: "{{ alarm_actions }}"
+        state: present
+      loop: "{{ alarm_hosts | product(agent_metrics) | list }}"
+      loop_control:
+        label: "{{ item.0 }} {{ item.1.metric }}"
+      vars:
+        agent_metrics:
+          - { metric: disk_used_percent, threshold: 85 }
+          - { metric: mem_used_percent, threshold: 90 }
+      when: monitoring_cloudwatch_enabled | default(true) | bool

@@ -1,0 +1,10 @@
+---
+common_packages_os:
+  - apt-transport-https
+  - curl
+  - gnupg
+  - iproute2
+  - python3-apt
+common_sudo_group: sudo
+common_chrony_config: /etc/chrony/chrony.conf
+common_chrony_service: chrony

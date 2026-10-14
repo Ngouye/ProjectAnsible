@@ -1,0 +1,49 @@
+---
+- name: Create SSH access group
+  ansible.builtin.group:
+    name: "{{ common_ssh_group }}"
+    system: true
+    state: present
+
+# Must happen before sshd "AllowGroups" is enforced, otherwise Ansible locks itself out
+- name: Add the Ansible connection user to the SSH access group
+  ansible.builtin.user:
+    name: "{{ ansible_user | default('root') }}"
+    groups: "{{ common_ssh_group }}"
+    append: true
+
+- name: Create admin users (SSH key only, password locked)
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    groups:
+      - "{{ common_sudo_group }}"
+      - "{{ common_ssh_group }}"
+    append: true
+    shell: /bin/bash
+    password_lock: true
+    state: "{{ item.state | default('present') }}"
+    remove: "{{ item.state | default('present') == 'absent' }}"
+  loop: "{{ common_admin_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Deploy admin SSH public keys
+  ansible.posix.authorized_key:
+    user: "{{ item.name }}"
+    key: "{{ item.ssh_public_key }}"
+    exclusive: true
+    state: present
+  loop: "{{ common_admin_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.state | default('present') == 'present'
+
+- name: Grant sudo to admin users
+  ansible.builtin.template:
+    src: sudoers-admins.j2
+    dest: /etc/sudoers.d/90-admins
+    owner: root
+    group: root
+    mode: "0440"
+    validate: /usr/sbin/visudo -cf %s
+  when: common_admin_users | length > 0

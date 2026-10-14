@@ -1,0 +1,23 @@
+---
+galaxy_info:
+  role_name: app_deploy
+  namespace: portfolio
+  author: Ngouye Gning
+  description: Secure application deployment - immutable releases, sandboxed gunicorn, hardened nginx TLS, health check and automatic rollback
+  license: MIT
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+    - name: EL
+      versions:
+        - "9"
+  galaxy_tags:
+    - deployment
+    - nginx
+    - python
+    - rollback
+
+dependencies: []

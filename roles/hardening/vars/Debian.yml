@@ -1,0 +1,17 @@
+---
+hardening_sshd_service: ssh
+hardening_nftables_config: /etc/nftables.conf
+hardening_auditd_packages:
+  - auditd
+  - audispd-plugins
+hardening_fail2ban_packages:
+  - fail2ban
+  - python3-systemd
+# Legacy clear-text services + ufw (nftables is the single firewall manager)
+hardening_packages_absent:
+  - telnet
+  - rsh-client
+  - talk
+  - nis
+  - xinetd
+  - ufw

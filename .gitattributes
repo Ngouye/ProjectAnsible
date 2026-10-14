@@ -1,0 +1,3 @@
+# Linux-targeted project: always LF, even on Windows checkouts
+* text=auto eol=lf
+*.sh text eol=lf

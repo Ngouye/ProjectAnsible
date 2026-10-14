@@ -1,0 +1,31 @@
+---
+# Dynamic inventory: EC2 instances are discovered from their tags,
+# no IP address is ever hard-coded in the repository.
+plugin: amazon.aws.aws_ec2
+
+regions:
+  - eu-west-3
+
+filters:
+  instance-state-name: running
+  tag:Project: ansible-aws-automation
+  tag:Environment: dev
+
+hostnames:
+  - tag:Name
+  - instance-id
+
+# Groups: role_web, env_dev, os_ubuntu, az_eu_west_3a...
+keyed_groups:
+  - key: tags.Role
+    prefix: role
+  - key: tags.Environment
+    prefix: env
+  - key: tags.OS
+    prefix: os
+  - key: placement.availability_zone
+    prefix: az
+
+compose:
+  ansible_host: public_ip_address | default(private_ip_address)
+  ansible_user: "'ubuntu' if tags.OS | default('ubuntu') == 'ubuntu' else 'ec2-user'"

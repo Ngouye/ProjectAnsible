@@ -1,0 +1,37 @@
+{% set log_files = monitoring_cloudwatch_os_log_files + monitoring_cloudwatch_log_files %}
+{% set collect_list = [] %}
+{% for f in log_files %}
+{%   set _ = collect_list.append({
+       'file_path': f.path,
+       'log_group_name': monitoring_cloudwatch_log_group_prefix ~ '/' ~ f.group,
+       'log_stream_name': '{instance_id}',
+       'retention_in_days': monitoring_cloudwatch_log_retention_days,
+     }) %}
+{% endfor %}
+{% set config = {
+  'agent': {
+    'metrics_collection_interval': monitoring_cloudwatch_metrics_interval,
+    'run_as_user': 'root',
+  },
+  'metrics': {
+    'namespace': monitoring_cloudwatch_namespace,
+    'append_dimensions': {'InstanceId': '${aws:InstanceId}'},
+    'aggregation_dimensions': [['InstanceId']],
+    'metrics_collected': {
+      'cpu': {'measurement': ['cpu_usage_idle', 'cpu_usage_iowait', 'cpu_usage_user', 'cpu_usage_system'], 'totalcpu': true},
+      'mem': {'measurement': ['mem_used_percent']},
+      'swap': {'measurement': ['swap_used_percent']},
+      'disk': {
+        'measurement': ['used_percent', 'inodes_free'],
+        'resources': ['/'],
+        'drop_device': true,
+        'ignore_file_system_types': ['sysfs', 'tmpfs', 'devtmpfs', 'overlay', 'squashfs'],
+      },
+      'netstat': {'measurement': ['tcp_established', 'tcp_time_wait']},
+    },
+  },
+  'logs': {
+    'logs_collected': {'files': {'collect_list': collect_list}},
+  },
+} %}
+{{ config | to_nice_json(indent=2) }}

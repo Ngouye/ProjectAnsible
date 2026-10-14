@@ -1,0 +1,42 @@
+---
+- name: Restart sshd
+  ansible.builtin.systemd_service:
+    name: "{{ hardening_sshd_service }}"
+    state: restarted
+  when: not hardening_is_container
+
+- name: Reload nftables
+  # reload re-applies only our table; restart would flush every table (fail2ban included)
+  ansible.builtin.systemd_service:
+    name: nftables
+    state: reloaded
+
+- name: Load audit rules
+  ansible.builtin.command:
+    cmd: /usr/sbin/augenrules --load
+  register: hardening_augenrules
+  changed_when: true
+  # In immutable mode (-e 2) new rules only apply after a reboot: not an error
+  failed_when:
+    - hardening_augenrules.rc != 0
+    - "'immutable' not in (hardening_augenrules.stdout ~ hardening_augenrules.stderr)"
+  when: not hardening_is_container
+
+- name: Reload auditd configuration
+  # auditd refuses "systemctl restart" on RHEL; SIGHUP reloads auditd.conf everywhere
+  ansible.builtin.command:
+    cmd: pkill -HUP -x auditd
+  changed_when: true
+  when: not hardening_is_container
+
+- name: Restart fail2ban
+  ansible.builtin.systemd_service:
+    name: fail2ban
+    state: restarted
+  when: not hardening_is_container
+
+- name: Restart journald
+  ansible.builtin.systemd_service:
+    name: systemd-journald
+    state: restarted
+  when: not hardening_is_container
