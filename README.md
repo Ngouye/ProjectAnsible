@@ -1,6 +1,6 @@
 # Automatisation Cloud AWS avec Ansible
 
-![CI/CD](https://github.com/Ngouye/AnsibleProject/actions/workflows/deploy.yml/badge.svg)
+![CI/CD](https://github.com/Ngouye/ProjectAnsible/actions/workflows/deploy.yml/badge.svg)
 ![Ansible](https://img.shields.io/badge/Ansible-core%202.17%2B-EE0000?logo=ansible)
 ![AWS](https://img.shields.io/badge/AWS-EC2%20%7C%20VPC%20%7C%20IAM%20%7C%20CloudWatch-FF9900?logo=amazonaws)
 ![ansible-lint](https://img.shields.io/badge/ansible--lint-production%20profile-brightgreen)
@@ -190,8 +190,8 @@ sequenceDiagram
 ### 1. Installation
 
 ```bash
-git clone https://github.com/Ngouye/AnsibleProject.git
-cd AnsibleProject
+git clone https://github.com/Ngouye/ProjectAnsible.git
+cd ProjectAnsible
 python -m venv .venv && source .venv/bin/activate
 make install
 ```

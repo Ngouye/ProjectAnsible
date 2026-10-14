@@ -14,8 +14,8 @@
         },
         "StringLike": {
           "token.actions.githubusercontent.com:sub": [
-            "repo:Ngouye/AnsibleProject:environment:dev",
-            "repo:Ngouye/AnsibleProject:environment:prod"
+            "repo:Ngouye/ProjectAnsible:environment:dev",
+            "repo:Ngouye/ProjectAnsible:environment:prod"
           ]
         }
       }
