@@ -7,5 +7,5 @@ ansible-lint>=25.1
 yamllint>=1.35
 molecule>=24.12
 molecule-plugins[docker]>=23.6
-docker>=7.1
+docker>=7.2.0
 pre-commit>=3.8
